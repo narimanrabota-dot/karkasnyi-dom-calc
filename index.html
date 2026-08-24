@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Калькулятор каркасного дома</title>
+
+  <style>
+    /* ===== СТИЛИ ===== */
+
+    :root {
+      --ink: #263140;
+      --ink-soft: #7b8794;
+      --green: #2f5044;
+      --green-dark: #223c33;
+      --line: #e3e7e3;
+      --field: #f6f7f5;
+      --bg: #edf0ec;
+
+      /* фон-градиент: от тёмно-зелёного к светлому */
+      --bg1: #2f5044;
+      --bg2: #6d9c86;
+      --bg3: #cfe0d4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg3);
+      background-image: linear-gradient(160deg, var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%);
+      background-attachment: fixed;
+      color: var(--ink);
+      padding: 20px;
+    }
+
+    .calculator {
+      width: 100%;
+      max-width: 460px;
+      background: #fff;
+      border-radius: 18px;
+      padding: 28px 24px;
+      box-shadow: 0 30px 64px rgba(18, 42, 32, .40),
+                  0 4px 10px rgba(18, 42, 32, .20);
+    }
+
+    h1 { font-size: 22px; line-height: 1.25; margin-bottom: 4px; letter-spacing: -.2px; }
+    .subtitle { font-size: 14px; color: var(--ink-soft); margin-bottom: 22px; }
+
+    .field { margin-bottom: 16px; }
+
+    label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      height: 46px;
+      padding: 0 12px;
+      font-size: 16px;
+      font-family: inherit;
+      color: inherit;
+      background: var(--field);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      outline: none;
+      appearance: none;
+      transition: border-color .15s, background .15s;
+    }
+
+    input[type="number"]:focus,
+    select:focus {
+      border-color: var(--green);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(47, 80, 68, .10);
+    }
+
+    select {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%237b8794' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 34px;
+    }
+
+    .dims { display: flex; align-items: center; gap: 8px; }
+    .dims input { text-align: center; }
+    .dims .mul { color: var(--ink-soft); font-size: 16px; flex: 0 0 auto; }
+
+    .hint { font-size: 13px; color: var(--ink-soft); margin-top: 6px; }
+
+    .area-summary {
+      display: flex; justify-content: space-between; align-items: baseline;
+      background: var(--field); border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 16px;
+      font-size: 13px; color: var(--ink-soft);
+    }
+    .area-summary b { color: var(--green); font-size: 15px; }
+
+    .toggle-line {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 10px; font-size: 14px; font-weight: 500;
+    }
+
+    [hidden] { display: none !important; }
+
+    .opt-warn {
+      font-size: 12px; color: #8c3b2f; background: #fbeeec;
+      border-radius: 8px; padding: 7px 10px; margin-top: 6px;
+    }
+
+    input.num {
+      width: 92px; height: 32px; padding: 0 10px;
+      font-size: 13px; text-align: right;
+      font-family: inherit; color: inherit;
+      background: var(--field); border: 1px solid var(--line);
+      border-radius: 8px; outline: none;
+    }
+    input.num:focus { border-color: var(--green); background: #fff; }
+
+    select.mini {
+      width: auto; max-width: 62%; height: 32px;
+      padding: 0 26px 0 9px; font-size: 13px;
+      background-position: right 9px center; border-radius: 8px;
+    }
+
+    .calc-out { font-weight: 600; color: var(--green); font-size: 14px; }
+
+    /* ----- Доп. опции: группы-аккордеоны со счётчиком ----- */
+
+    .options { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 6px; }
+
+    .options-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--ink-soft); margin: 10px 0 2px;
+    }
+
+    /* у каждой группы свой цвет: рейка слева, цвет задан через --gc */
+    .acc-group {
+      position: relative;
+      padding-left: 13px;
+      border-bottom: 1px solid var(--line);
+    }
+    .acc-group:nth-last-of-type(2) { border-bottom: none; }
+
+    .acc-group::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 9px; bottom: 9px;
+      width: 4px;
+      border-radius: 3px;
+      background: var(--gc);
+    }
+
+    .ah {
+      display: flex; align-items: center; gap: 9px;
+      padding: 11px 0; cursor: pointer; user-select: none; font-size: 14px;
+    }
+
+    .ah .cnt {
+      flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 11px; font-weight: 700;
+      background: var(--green); color: #fff;
+    }
+    .ah .cnt.off { background: var(--field); color: #b9c1c6; }
+
+    .ah .name { font-weight: 600; white-space: nowrap; }
+
+    .ah .ell {
+      flex: 1 1 auto; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-size: 13px; color: var(--ink-soft); text-align: right;
+    }
+
+    .ah .sum { font-weight: 600; color: var(--green); font-size: 13px; white-space: nowrap; }
+    .ah .sum.off { color: #c3cbcf; font-weight: 500; }
+
+    .ah .arrow { color: var(--ink-soft); flex: 0 0 auto; }
+
+    .acc-body { padding-bottom: 8px; }
+
+    /* раскрытая группа: содержимое со сдвигом от линии-гида в цвете группы */
+    .acc-group.open .acc-body {
+      margin-left: 10px;
+      padding-left: 15px;
+      border-left: 2px solid var(--gc);
+    }
+
+    .acc-group.open .ah .name { color: var(--gc); }
+
+    .sub { font-size: 12px; color: var(--ink-soft); margin: 8px 0 0; font-weight: 500; }
+
+    .opt-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 8px 0;
+      border-bottom: 1px solid var(--line); font-size: 14px;
+    }
+    .opt-row:last-child { border-bottom: none; }
+
+    .price { color: var(--ink-soft); font-size: 12px; margin-left: 5px; }
+
+    .stepper { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+    .stepper button {
+      width: 30px; height: 30px;
+      border: 1px solid var(--line); background: var(--field);
+      border-radius: 8px; color: var(--ink); font-size: 16px; line-height: 1; cursor: pointer;
+    }
+    .stepper button:hover { background: var(--green); color: #fff; border-color: var(--green); }
+    .stepper .val { min-width: 30px; text-align: center; font-weight: 600; font-size: 14px; }
+    .stepper .val.zero { color: #b9c1c6; }
+
+    .pills {
+      display: inline-flex; flex-wrap: wrap;
+      background: var(--field); border: 1px solid var(--line);
+      border-radius: 9px; padding: 2px; gap: 2px;
+    }
+    .pills button {
+      border: none; background: transparent; color: var(--ink-soft);
+      font: inherit; font-size: 13px; font-weight: 500;
+      padding: 6px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+    }
+    .pills button.on { background: var(--green); color: #fff; }
+
+    .switch { position: relative; flex: 0 0 auto; width: 46px; height: 27px; cursor: pointer; }
+    .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+    .switch .track { position: absolute; inset: 0; background: #d6dbd6; border-radius: 99px; transition: background .18s; }
+    .switch .track::after {
+      content: ""; position: absolute; top: 3px; left: 3px;
+      width: 21px; height: 21px; background: #fff; border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(38, 49, 64, .25); transition: transform .18s;
+    }
+    .switch input:checked + .track { background: var(--green); }
+    .switch input:checked + .track::after { transform: translateX(19px); }
+
+    .opt-sum {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px dashed var(--line);
+      font-size: 13px; color: var(--ink-soft);
+    }
+    .opt-sum b { color: var(--green); font-size: 16px; }
+
+    button.calc {
+      width: 100%; height: 50px; margin-top: 18px;
+      font-size: 16px; font-weight: 600; font-family: inherit; letter-spacing: .2px;
+      color: #fff; background: var(--green);
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: background .15s, transform .05s;
+    }
+    button.calc:hover { background: var(--green-dark); }
+    button.calc:active { transform: translateY(1px); }
+
+    .result {
+      margin-top: 20px; padding: 18px;
+      background: var(--field);
+      border-left: 3px solid var(--green);
+      border-radius: 12px; display: none;
+    }
+    .result.visible { display: block; }
+    .result.error { background: #fbeeec; border-left-color: #8c3b2f; color: #8c3b2f; }
+
+    .result-total { font-size: 28px; font-weight: 700; color: var(--green); margin-bottom: 10px; }
+    .result.error .result-total { color: inherit; }
+
+    .result-row {
+      display: flex; justify-content: space-between; gap: 12px;
+      font-size: 14px; padding: 5px 0; border-bottom: 1px solid var(--line);
+    }
+    .result-row:last-of-type { border-bottom: none; }
+    .result-row span:first-child { color: var(--ink-soft); }
+    .result-row span:last-child { font-weight: 600; white-space: nowrap; }
+
+    .result-line { font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===== РАЗМЕТКА ===== -->
+
+  <div class="calculator">
+
+    <h1>Каркасный дом</h1>
+    <p class="subtitle">Расчёт стоимости бюджетного дома</p>
+
+    <div class="field">
+      <label for="liveA">Жилая часть, м</label>
+      <div class="dims">
+        <input type="number" id="liveA" min="0" step="0.1" placeholder="6">
+        <span class="mul">×</span>
+        <input type="number" id="liveB" min="0" step="0.1" placeholder="9">
+      </div>
+    </div>
+
+    <div class="toggle-line">
+      <span>Терраса</span>
+      <label class="switch"><input type="checkbox" id="hasTerrace"><span class="track"></span></label>
+    </div>
+
+    <div class="field" id="terraceField" hidden>
+      <label for="terrA">Терраса, м</label>
+      <div class="dims">
+        <input type="number" id="terrA" min="0" step="0.1" placeholder="4">
+        <span class="mul">×</span>
+        <input type="number" id="terrB" min="0" step="0.1" placeholder="2">
+      </div>
+      <p class="hint">Терраса считается по цене «Хозблок», каркас у неё тот же, что у дома.</p>
+    </div>
+
+    <div class="area-summary" id="areaSummary"><span>Укажите размеры</span><b>—</b></div>
+
+    <div class="field">
+      <label for="frame">Сечение каркаса</label>
+      <select id="frame">
+        <option value="50x50">50 × 50 мм</option>
+        <option value="40x100">40 × 100 мм</option>
+        <option value="40x150">40 × 150 мм</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="finish">Отделка внутри жилой части</label>
+      <select id="finish">
+        <option value="hozblok">Хозблок</option>
+        <option value="orgalit">ДВП (оргалит)</option>
+        <option value="osb">ОСБ</option>
+        <option value="vagonka">Вагонка</option>
+      </select>
+      <p class="hint">Снаружи всегда вагонка класса С, утепление минватой уже в цене.</p>
+    </div>
+
+    <div class="field">
+      <label for="distance">Дистанция доставки, км</label>
+      <input type="number" id="distance" min="0" step="1" value="50" placeholder="Например, 50">
+      <p class="hint">До 50 км — доставка 12 000 ₽. Свыше 50 км — плюс 120 ₽ за каждый км сверх 50.</p>
+    </div>
+
+    <div class="options" id="options"></div>
+
+    <button class="calc" id="calcBtn">Рассчитать</button>
+
+    <div class="result" id="result"></div>
+
+  </div>
+
+  <script>
+    // ===== ЛОГИКА =====
+
+    // Цены за 1 м²: [сечение каркаса][тип отделки].
+    // Терраса всегда считается по колонке hozblok того же каркаса.
+    const PRICES = {
+      '50x50':  { hozblok: 6000, orgalit: 7000,  osb: 8000,  vagonka: 9000  },
+      '40x100': { hozblok: 7000, orgalit: 8000,  osb: 9000,  vagonka: 10000 },
+      '40x150': { hozblok: 9500, orgalit: 11000, osb: 12000, vagonka: 14000 }
+    };
+
+    const TERRACE_FINISH = 'hozblok';
+
+    // ----- ДОСТАВКА И СБОРКА -----
+    // Запись «3+3» = 3 доставки + 3 сборки, количество одинаковое.
+
+    const DELIVERY_BASE = 12000;
+    const DELIVERY_FREE_KM = 50;
+    const DELIVERY_PER_KM = 120;
+
+    const ASSEMBLY_NEAR = 10000;
+    const ASSEMBLY_FAR = 12000;
+
+    function deliveryPrice(km) {
+      if (km <= DELIVERY_FREE_KM) return DELIVERY_BASE;
+      return DELIVERY_BASE + (km - DELIVERY_FREE_KM) * DELIVERY_PER_KM;
+    }
+
+    function assemblyPrice(km) {
+      return km <= DELIVERY_FREE_KM ? ASSEMBLY_NEAR : ASSEMBLY_FAR;
+    }
+
+    const UNITS_TABLE = {
+      '50x50':  [[18, 1], [24, 2], [30, 3], [36, 3], [42, 3], [48, 4], [54, 4], [60, 5]],
+      '40x100': [[18, 1], [24, 2], [30, 3], [36, 3], [42, 4], [48, 5], [54, 5], [60, 6]],
+      '40x150': [[18, 2], [24, 3], [30, 4], [36, 5], [42, 5], [48, 6], [54, 7], [60, 8]]
+    };
+
+    const ROUND_MODE = 'up';   // 'up' — всегда вверх, 'nearest' — к ближайшему
+
+    function getUnits(area, frame) {
+      const points = UNITS_TABLE[frame];
+      const first = points[0];
+      const last = points[points.length - 1];
+      let raw;
+
+      if (area <= first[0]) {
+        raw = area / (first[0] / first[1]);
+      } else if (area >= last[0]) {
+        raw = area / (last[0] / last[1]);
+      } else {
+        for (let i = 0; i < points.length - 1; i++) {
+          const a = points[i], b = points[i + 1];
+          if (area >= a[0] && area <= b[0]) {
+            raw = a[1] + (b[1] - a[1]) * (area - a[0]) / (b[0] - a[0]);
+            break;
+          }
+        }
+      }
+
+      const n = ROUND_MODE === 'up' ? Math.ceil(raw - 0.0001) : Math.round(raw);
+      return Math.max(1, n);
+    }
+
+    // ----- ДОП. ОПЦИИ -----
+
+    const WINDOWS = [
+      { id: 'pvh-60x90',   group: 'ПВХ',        label: '60 × 90 см',   short: '60×90',      price: 5000 },
+      { id: 'pvh-100x100', group: 'ПВХ',        label: '100 × 100 см', short: '100×100',    price: 8000 },
+      { id: 'pvh-100x120', group: 'ПВХ',        label: '100 × 120 см', short: '100×120',    price: 10000 },
+      { id: 'pvh-200x80',  group: 'ПВХ',        label: '200 × 80 см',  short: '200×80',     price: 12000 },
+      { id: 'wood-80x70',  group: 'Деревянные', label: '80 × 70 см',   short: '80×70 дер.', price: 1500 },
+      { id: 'wood-50x50',  group: 'Деревянные', label: '50 × 50 см',   short: '50×50 дер.', price: 800 }
+    ];
+
+    const DOORS = [
+      { id: 'in-nabor', group: 'Входные',      label: 'Наборная',              short: 'вх. наборная', price: 3000 },
+      { id: 'in-metal', group: 'Входные',      label: 'Металлическая',         short: 'вх. металл.',  price: 10000 },
+      { id: 'mk-nabor', group: 'Межкомнатные', label: 'Наборная',              short: 'мк. наборная', price: 3000 },
+      { id: 'mk-filen', group: 'Межкомнатные', label: 'Филёнчатая из массива', short: 'мк. филёнч.',  price: 6000 }
+    ];
+
+    const PARTITIONS = {
+      dvp:     { label: 'ДВП',     price: 2500 },
+      osb:     { label: 'ОСБ',     price: 3000 },
+      vagonka: { label: 'Вагонка', price: 4000 }
+    };
+
+    const STEPS_PRICE = 3000;
+
+    const PORTAGE_BASE = 10000;
+    const PORTAGE_PER_M = 1000;
+
+    // ----- ФУНДАМЕНТ -----
+    // Количество опор одинаково для блоков и свай: floor(сторона / 2 + 1) по каждой
+    // стороне, затем произведение. Терраса считается отдельно и прибавляется.
+    const FOUNDATION_TYPES = {
+      blocks: { label: 'Бетонные блоки', short: 'блоки', unit: 'блоков', price: 200 },
+      piles:  { label: 'Винтовые сваи',  short: 'сваи',  unit: 'свай',   price: null }
+    };
+
+    const PILE_SIZES = {
+      '2000x76': { label: '2000 × 76 мм', price: 4000 },
+      '2500x89': { label: '2500 × 89 мм', price: 4500 }
+    };
+
+    const PILE_PER_KM = 100;
+
+    function oporPerSide(side) {
+      return side > 0 ? Math.floor(side / 2 + 1) : 0;
+    }
+
+    // ----- КРОВЛЯ -----
+    const ROOF_MATERIALS = {
+      galv:  { label: 'Профнастил оцинкованный', short: 'оцинк. профнастил',  price: 0 },
+      color: { label: 'Профнастил цветной',      short: 'цветной профнастил', price: 500 },
+      tile:  { label: 'Металлочерепица цветная', short: 'металлочерепица',    price: 700 }
+    };
+
+    const ROOF_TYPES = {
+      '1': { label: '1-скатная', factor: 1, extra: 0 },
+      '2': { label: '2-скатная', factor: 1, extra: 0 }
+    };
+
+    const FRAME_NAMES = {
+      '50x50': '50 × 50 мм',
+      '40x100': '40 × 100 мм',
+      '40x150': '40 × 150 мм'
+    };
+
+    const FINISH_NAMES = {
+      hozblok: 'Хозблок',
+      orgalit: 'ДВП (оргалит)',
+      osb: 'ОСБ',
+      vagonka: 'Вагонка'
+    };
+
+    function money(value) {
+      return Math.round(value).toLocaleString('ru-RU') + ' ₽';
+    }
+
+    function plural(n, one, few, many) {
+      const mod10 = n % 10, mod100 = n % 100;
+      if (mod10 === 1 && mod100 !== 11) return one;
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+      return many;
+    }
+
+    // ----- ПОСТРОЕНИЕ БЛОКА ДОП. ОПЦИЙ -----
+
+    function stepperHtml() {
+      return '<span class="stepper"><button data-step="-1">−</button>' +
+             '<span class="val zero">0</span><button data-step="1">+</button></span>';
+    }
+
+    function countRow(kind, item) {
+      return '<div class="opt-row" data-kind="' + kind + '" data-id="' + item.id +
+             '" data-price="' + item.price + '">' +
+             '<span>' + item.label + ' <span class="price">' + money(item.price) + '</span></span>' +
+             stepperHtml() + '</div>';
+    }
+
+    function groupedRows(kind, items) {
+      let html = '', lastGroup = '';
+      items.forEach(item => {
+        if (item.group !== lastGroup) {
+          html += '<div class="sub">' + item.group + '</div>';
+          lastGroup = item.group;
+        }
+        html += countRow(kind, item);
+      });
+      return html;
+    }
+
+    // Цвет каждой группы — рейка слева и линия-гид при раскрытии
+    const GROUP_COLORS = {
+      win:   '#4f8fc0',   // синий
+      door:  '#b8763f',   // коричневый
+      part:  '#9a7bb5',   // сиреневый
+      found: '#4f8f6b',   // зелёный
+      roof:  '#c9a227',   // жёлтый
+      misc:  '#8c8f92'    // серый
+    };
+
+    // Группа-аккордеон: кружок-счётчик, название, сводка выбранного, сумма
+    function accGroup(key, title, bodyHtml) {
+      return '<div class="acc-group" data-group="' + key +
+        '" style="--gc: ' + GROUP_COLORS[key] + '">' +
+        '<div class="ah" data-acc="' + key + '">' +
+          '<span class="cnt off">0</span>' +
+          '<span class="name">' + title + '</span>' +
+          '<span class="ell"></span>' +
+          '<span class="sum off">0 ₽</span>' +
+          '<span class="arrow">⌄</span>' +
+        '</div>' +
+        '<div class="acc-body" hidden>' + bodyHtml + '</div>' +
+      '</div>';
+    }
+
+    function renderOptions() {
+      let html = '<div class="options-title">Дополнительно</div>';
+
+      html += accGroup('win', 'Окна', groupedRows('win', WINDOWS));
+      html += accGroup('door', 'Двери', groupedRows('door', DOORS));
+
+      html += accGroup('part', 'Перегородки',
+        '<div class="opt-row"><span>Материал</span><span class="pills" data-pills="part">' +
+        Object.keys(PARTITIONS).map((k, i) =>
+          '<button data-val="' + k + '"' + (i === 0 ? ' class="on"' : '') + '>' +
+          PARTITIONS[k].label + '</button>').join('') +
+        '</span></div>' +
+        '<div class="opt-row" data-kind="part"><span>Длина, м ' +
+        '<span class="price" id="partPrice">' + money(PARTITIONS.dvp.price) + '/м</span></span>' +
+        stepperHtml() + '</div>');
+
+      html += accGroup('found', 'Фундамент',
+        '<div class="opt-row"><span>Тип</span><span class="pills" data-pills="found">' +
+        '<button data-val="blocks" class="on">Бетонные блоки</button>' +
+        '<button data-val="piles">Винтовые сваи</button></span></div>' +
+        '<div class="opt-row" id="pileSizeRow" hidden><span>Размер сваи</span>' +
+        '<select class="mini" id="pileSize">' +
+        Object.keys(PILE_SIZES).map(k =>
+          '<option value="' + k + '">' + PILE_SIZES[k].label +
+          ' — ' + PILE_SIZES[k].price + ' ₽</option>').join('') +
+        '</select></div>' +
+        '<div class="opt-row"><span id="foundLabel">Опоры</span>' +
+        '<span class="calc-out" id="foundField">—</span></div>' +
+        '<div class="opt-warn" id="foundWarn" hidden></div>');
+
+      html += accGroup('roof', 'Кровля',
+        '<div class="opt-row"><span>Материал</span>' +
+        '<select class="mini" id="roofMat">' +
+        Object.keys(ROOF_MATERIALS).map(k =>
+          '<option value="' + k + '">' + ROOF_MATERIALS[k].label +
+          (ROOF_MATERIALS[k].price ? ' +' + ROOF_MATERIALS[k].price + ' ₽/м²' : ' (в базе)') +
+          '</option>').join('') +
+        '</select></div>' +
+        '<div class="opt-row"><span>Тип</span><span class="pills" data-pills="roof">' +
+        '<button data-val="1">1-скатная</button><button data-val="2" class="on">2-скатная</button>' +
+        '</span></div>');
+
+      html += accGroup('misc', 'Прочее',
+        '<div class="opt-row"><span>Ступеньки <span class="price">' + money(STEPS_PRICE) +
+        '</span></span><label class="switch"><input type="checkbox" id="steps"><span class="track"></span></label></div>' +
+        '<div class="opt-row"><span>Пронос материалов <span class="price">' +
+        money(PORTAGE_BASE) + ' + ' + money(PORTAGE_PER_M) + '/м</span></span>' +
+        '<label class="switch"><input type="checkbox" id="portage"><span class="track"></span></label></div>' +
+        '<div class="opt-row" id="portageRow" hidden><span>Дистанция проноса, м</span>' +
+        '<input type="number" class="num" id="portageM" min="0" step="1" value="0"></div>');
+
+      html += '<div class="opt-sum"><span>Доп-опции</span><b id="optSum">0 ₽</b></div>';
+
+      document.getElementById('options').innerHTML = html;
+    }
+
+    // ----- ЧТЕНИЕ РАЗМЕРОВ -----
+
+    function readDims() {
+      const num = id => parseFloat(document.getElementById(id).value) || 0;
+      const hasTerrace = document.getElementById('hasTerrace').checked;
+      const liveA = num('liveA'), liveB = num('liveB');
+      const terrA = hasTerrace ? num('terrA') : 0;
+      const terrB = hasTerrace ? num('terrB') : 0;
+      const liveArea = liveA * liveB;
+      const terrArea = terrA * terrB;
+
+      return { hasTerrace, liveA, liveB, terrA, terrB, liveArea, terrArea,
+               totalArea: liveArea + terrArea };
+    }
+
+    // ----- ЧТЕНИЕ ДОП. ОПЦИЙ -----
+
+    function readOptions(dims, area, km) {
+      const opts = document.getElementById('options');
+      const pick = sel => opts.querySelector(sel);
+      const countOf = row => parseInt(row.querySelector('.val').textContent, 10) || 0;
+
+      // окна
+      let winCount = 0, winSum = 0;
+      const winParts = [];
+      WINDOWS.forEach(w => {
+        const row = opts.querySelector('[data-kind="win"][data-id="' + w.id + '"]');
+        const n = countOf(row);
+        if (!n) return;
+        winCount += n;
+        winSum += n * w.price;
+        winParts.push(w.short + ' ×' + n);
+      });
+
+      // двери
+      let doorCount = 0, doorSum = 0;
+      const doorParts = [];
+      DOORS.forEach(d => {
+        const row = opts.querySelector('[data-kind="door"][data-id="' + d.id + '"]');
+        const n = countOf(row);
+        if (!n) return;
+        doorCount += n;
+        doorSum += n * d.price;
+        doorParts.push(d.short + ' ×' + n);
+      });
+
+      // перегородки
+      const partKey = pick('[data-pills="part"] button.on').dataset.val;
+      const partLen = countOf(pick('[data-kind="part"]'));
+      const partSum = partLen * PARTITIONS[partKey].price;
+
+      // прочее
+      const steps = pick('#steps').checked;
+      const stepsSum = steps ? STEPS_PRICE : 0;
+      const portage = pick('#portage').checked;
+      const portageM = parseFloat(pick('#portageM').value) || 0;
+      const portageSum = portage ? PORTAGE_BASE + portageM * PORTAGE_PER_M : 0;
+
+      const miscParts = [];
+      if (steps) miscParts.push('ступеньки');
+      if (portage) miscParts.push('пронос ' + portageM + ' м');
+
+      // фундамент
+      const foundKey = pick('[data-pills="found"] button.on').dataset.val;
+      const isPiles = foundKey === 'piles';
+      const pileSize = pick('#pileSize').value;
+
+      const liveOporA = oporPerSide(dims.liveA);
+      const liveOporB = oporPerSide(dims.liveB);
+      const liveOpor = liveOporA * liveOporB;
+      const terrOporA = oporPerSide(dims.terrA);
+      const terrOporB = oporPerSide(dims.terrB);
+      const terrOpor = terrOporA * terrOporB;
+
+      const foundCount = liveOpor + terrOpor;
+      const foundUnitPrice = isPiles ? PILE_SIZES[pileSize].price : FOUNDATION_TYPES.blocks.price;
+      const foundBase = foundCount * foundUnitPrice;
+      const pileKmSum = isPiles && foundCount ? (km || 0) * PILE_PER_KM : 0;
+      const foundSum = foundBase + pileKmSum;
+
+      const foundText = foundCount
+        ? (isPiles ? 'сваи ' + PILE_SIZES[pileSize].label : 'бетонные блоки') + ' ×' + foundCount
+        : 'нужны размеры дома';
+
+      // кровля
+      const roofKey = pick('[data-pills="roof"] button.on').dataset.val;
+      const roofMat = pick('#roofMat').value;
+      const roofSum = ROOF_MATERIALS[roofMat].price * (area || 0) *
+        ROOF_TYPES[roofKey].factor + ROOF_TYPES[roofKey].extra;
+
+      // сводки по группам для свёрнутых заголовков
+      const groups = {
+        win:   { sum: winSum,   count: winCount,  text: winParts.join(', ') },
+        door:  { sum: doorSum,  count: doorCount, text: doorParts.join(', ') },
+        part:  { sum: partSum,  count: partLen,
+                 text: partLen ? PARTITIONS[partKey].label + ' ' + partLen + ' м' : '' },
+        found: { sum: foundSum, count: foundCount, text: foundText },
+        roof:  { sum: roofSum,  count: roofSum ? 1 : 0,
+                 text: ROOF_MATERIALS[roofMat].short + ', ' + ROOF_TYPES[roofKey].label },
+        misc:  { sum: stepsSum + portageSum, count: miscParts.length, text: miscParts.join(', ') }
+      };
+
+      return {
+        winCount, winSum, doorCount, doorSum,
+        partKey, partLen, partSum,
+        steps, stepsSum, portage, portageM, portageSum,
+        foundKey, isPiles, pileSize,
+        liveOporA, liveOporB, liveOpor, terrOporA, terrOporB, terrOpor,
+        foundCount, foundUnitPrice, foundBase, pileKmSum, foundSum,
+        roofKey, roofMat, roofSum,
+        groups,
+        total: winSum + doorSum + partSum + stepsSum + portageSum + foundSum + roofSum
+      };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+      renderOptions();
+
+      const frameSelect = document.getElementById('frame');
+      const finishSelect = document.getElementById('finish');
+      const distanceInput = document.getElementById('distance');
+      const hasTerrace = document.getElementById('hasTerrace');
+      const optionsEl = document.getElementById('options');
+      const button = document.getElementById('calcBtn');
+      const resultBox = document.getElementById('result');
+
+      const dimInputs = ['liveA', 'liveB', 'terrA', 'terrB'].map(id => document.getElementById(id));
+
+      function refreshAll() {
+        const dims = readDims();
+        const km = parseFloat(distanceInput.value) || 0;
+        const o = readOptions(dims, dims.totalArea, km);
+
+        // сводка площадей
+        const summary = document.getElementById('areaSummary');
+        if (!dims.totalArea) {
+          summary.innerHTML = '<span>Укажите размеры</span><b>—</b>';
+        } else if (dims.terrArea) {
+          summary.innerHTML = '<span>Жилая ' + dims.liveArea.toFixed(1) +
+            ' м² + терраса ' + dims.terrArea.toFixed(1) + ' м²</span><b>' +
+            dims.totalArea.toFixed(1) + ' м²</b>';
+        } else {
+          summary.innerHTML = '<span>Жилая площадь</span><b>' + dims.liveArea.toFixed(1) + ' м²</b>';
+        }
+
+        document.getElementById('terraceField').hidden = !dims.hasTerrace;
+
+        // заголовки групп: кружок-счётчик, сводка, сумма
+        optionsEl.querySelectorAll('.acc-group').forEach(grp => {
+          const g = o.groups[grp.dataset.group];
+          const cnt = grp.querySelector('.cnt');
+          const sum = grp.querySelector('.sum');
+          cnt.textContent = g.count;
+          cnt.classList.toggle('off', !g.count);
+          grp.querySelector('.ell').textContent = g.text || 'не выбрано';
+          sum.textContent = money(g.sum);
+          sum.classList.toggle('off', !g.sum);
+        });
+
+        document.getElementById('optSum').textContent = money(o.total);
+
+        optionsEl.querySelectorAll('.stepper .val').forEach(v =>
+          v.classList.toggle('zero', v.textContent.trim() === '0'));
+
+        document.getElementById('partPrice').textContent = money(PARTITIONS[o.partKey].price) + '/м';
+        document.getElementById('portageRow').hidden = !o.portage;
+        document.getElementById('pileSizeRow').hidden = !o.isPiles;
+
+        document.getElementById('foundLabel').innerHTML =
+          'Количество ' + FOUNDATION_TYPES[o.foundKey].unit +
+          ' <span class="price">' + money(o.foundUnitPrice) + ' / шт</span>';
+
+        // без размеров дома опоры посчитать нельзя — говорим об этом прямо
+        const foundWarn = document.getElementById('foundWarn');
+        foundWarn.hidden = o.foundCount > 0;
+        if (!o.foundCount) {
+          foundWarn.textContent = 'Укажите размеры дома в самом верху — количество опор считается от сторон';
+        }
+
+        const fieldEl = document.getElementById('foundField');
+        if (!o.foundCount) {
+          fieldEl.textContent = '—';
+        } else if (o.terrOpor) {
+          fieldEl.textContent = o.liveOporA + '×' + o.liveOporB + ' + ' +
+            o.terrOporA + '×' + o.terrOporB + ' = ' + o.foundCount + ' шт';
+        } else {
+          fieldEl.textContent = o.liveOporA + '×' + o.liveOporB + ' = ' + o.foundCount + ' шт';
+        }
+
+        if (resultBox.classList.contains('visible') && !resultBox.classList.contains('error')) {
+          calculate();
+        }
+      }
+
+      function showError(text) {
+        resultBox.className = 'result visible error';
+        resultBox.textContent = text;
+      }
+
+      function calculate() {
+        const dims = readDims();
+        const frame = frameSelect.value;
+        const finish = finishSelect.value;
+        const km = parseFloat(distanceInput.value);
+
+        if (!dims.liveArea) { showError('Укажите обе стороны жилой части'); return; }
+        if (dims.hasTerrace && !dims.terrArea) { showError('Укажите обе стороны террасы'); return; }
+        if (isNaN(km) || km < 0) { showError('Укажите дистанцию доставки в км'); return; }
+
+        const livePrice = PRICES[frame][finish];
+        const liveSum = dims.liveArea * livePrice;
+        const terrPrice = PRICES[frame][TERRACE_FINISH];
+        const terrSum = dims.terrArea * terrPrice;
+
+        const units = getUnits(dims.totalArea, frame);
+        const onePer = deliveryPrice(km);
+        const oneAsm = assemblyPrice(km);
+        const deliveryTotal = units * onePer;
+        const assemblyTotal = units * oneAsm;
+
+        const o = readOptions(dims, dims.totalArea, km);
+
+        const total = liveSum + terrSum + deliveryTotal + assemblyTotal + o.total;
+
+        let rows =
+          '<div class="result-row"><span>Жилая часть: ' + dims.liveArea.toFixed(1) +
+          ' м² × ' + money(livePrice) + '</span><span>' + money(liveSum) + '</span></div>';
+
+        if (terrSum) {
+          rows += '<div class="result-row"><span>Терраса: ' + dims.terrArea.toFixed(1) +
+            ' м² × ' + money(terrPrice) + '</span><span>' + money(terrSum) + '</span></div>';
+        }
+
+        rows +=
+          '<div class="result-row"><span>Доставка: ' + units + ' × ' + money(onePer) +
+          '</span><span>' + money(deliveryTotal) + '</span></div>' +
+          '<div class="result-row"><span>Сборка: ' + units + ' × ' + money(oneAsm) +
+          '</span><span>' + money(assemblyTotal) + '</span></div>';
+
+        if (o.winCount) {
+          rows += '<div class="result-row"><span>Окна: ' + o.winCount +
+            ' шт</span><span>' + money(o.winSum) + '</span></div>';
+        }
+        if (o.doorCount) {
+          rows += '<div class="result-row"><span>Двери: ' + o.doorCount +
+            ' шт</span><span>' + money(o.doorSum) + '</span></div>';
+        }
+        if (o.partLen) {
+          rows += '<div class="result-row"><span>Перегородки ' + PARTITIONS[o.partKey].label +
+            ': ' + o.partLen + ' м × ' + money(PARTITIONS[o.partKey].price) +
+            '</span><span>' + money(o.partSum) + '</span></div>';
+        }
+        if (o.foundBase) {
+          const foundName = o.isPiles ? 'Сваи ' + PILE_SIZES[o.pileSize].label : 'Бетонные блоки';
+          rows += '<div class="result-row"><span>' + foundName + ': ' + o.foundCount +
+            ' × ' + money(o.foundUnitPrice) + '</span><span>' + money(o.foundBase) + '</span></div>';
+        }
+        if (o.pileKmSum) {
+          rows += '<div class="result-row"><span>Доставка свай: ' + km + ' км × ' +
+            money(PILE_PER_KM) + '</span><span>' + money(o.pileKmSum) + '</span></div>';
+        }
+        if (o.roofSum) {
+          rows += '<div class="result-row"><span>Кровля ' + ROOF_MATERIALS[o.roofMat].label +
+            ': ' + dims.totalArea.toFixed(1) + ' м² × ' + money(ROOF_MATERIALS[o.roofMat].price) +
+            '</span><span>' + money(o.roofSum) + '</span></div>';
+        }
+        if (o.steps) {
+          rows += '<div class="result-row"><span>Ступеньки</span><span>' +
+            money(STEPS_PRICE) + '</span></div>';
+        }
+        if (o.portage) {
+          rows += '<div class="result-row"><span>Пронос материалов: ' + money(PORTAGE_BASE) +
+            ' + ' + o.portageM + ' м × ' + money(PORTAGE_PER_M) +
+            '</span><span>' + money(o.portageSum) + '</span></div>';
+        }
+
+        resultBox.className = 'result visible';
+        resultBox.innerHTML =
+          '<div class="result-total">' + money(total) + '</div>' + rows +
+          '<div class="result-line">' +
+          'Дом ' + dims.liveA + '×' + dims.liveB + ' м' +
+          (dims.terrArea ? ' + терраса ' + dims.terrA + '×' + dims.terrB + ' м' : '') +
+          ', всего ' + dims.totalArea.toFixed(1) + ' м²' +
+          '<br>Каркас ' + FRAME_NAMES[frame] + ', отделка: ' + FINISH_NAMES[finish] +
+          '<br>Кровля: ' + ROOF_MATERIALS[o.roofMat].label + ', ' + ROOF_TYPES[o.roofKey].label +
+          '. Фундамент: ' + FOUNDATION_TYPES[o.foundKey].label +
+          (o.isPiles ? ' ' + PILE_SIZES[o.pileSize].label : '') +
+          '<br>' + units + '+' + units + ' — ' + units + ' ' +
+          plural(units, 'доставка', 'доставки', 'доставок') + ' и ' + units + ' ' +
+          plural(units, 'сборка', 'сборки', 'сборок') + ', дистанция ' + km + ' км</div>';
+      }
+
+      optionsEl.addEventListener('click', e => {
+        const stepBtn = e.target.closest('[data-step]');
+        if (stepBtn) {
+          const val = stepBtn.parentElement.querySelector('.val');
+          val.textContent = Math.max(0, parseInt(val.textContent, 10) + parseInt(stepBtn.dataset.step, 10));
+          refreshAll();
+          return;
+        }
+
+        const pill = e.target.closest('.pills button');
+        if (pill) {
+          pill.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+          pill.classList.add('on');
+          refreshAll();
+          return;
+        }
+
+        // раскрытие группы — открыта всегда одна
+        const head = e.target.closest('.ah');
+        if (head) {
+          const group = head.parentElement;
+          const willOpen = group.querySelector('.acc-body').hidden;
+          optionsEl.querySelectorAll('.acc-group').forEach(g => {
+            g.querySelector('.acc-body').hidden = true;
+            g.querySelector('.arrow').textContent = '⌄';
+            g.classList.remove('open');
+          });
+          if (willOpen) {
+            group.querySelector('.acc-body').hidden = false;
+            group.querySelector('.arrow').textContent = '⌃';
+            group.classList.add('open');
+          }
+        }
+      });
+
+      optionsEl.addEventListener('change', refreshAll);
+      optionsEl.addEventListener('input', refreshAll);
+
+      button.addEventListener('click', calculate);
+
+      [frameSelect, finishSelect, distanceInput, hasTerrace].forEach(el => {
+        el.addEventListener('change', refreshAll);
+      });
+
+      dimInputs.forEach(el => {
+        el.addEventListener('input', refreshAll);
+        el.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+      });
+
+      distanceInput.addEventListener('input', refreshAll);
+      distanceInput.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+
+      refreshAll();
+    });
+  </script>
+
+</body>
+</html>
