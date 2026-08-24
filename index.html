@@ -466,9 +466,27 @@
     };
 
     const ROOF_TYPES = {
-      '1': { label: '1-скатная', factor: 1, extra: 0 },
-      '2': { label: '2-скатная', factor: 1, extra: 0 }
+      '1': { label: '1-скатная' },
+      '2': { label: '2-скатная' }
     };
+
+    // Двускатная крыша — доплата за стропильную систему и работу.
+    // Считается от общей площади (жилая + терраса) по ставке своего каркаса,
+    // округляется вверх до сотен, но не меньше минимума.
+    // Односкатная не добавляет ничего — она в базовой цене за м².
+    const ROOF2_RATE = {
+      '50x50': 1350,
+      '40x100': 1500,
+      '40x150': 3000
+    };
+
+    const ROOF2_MIN = 15000;
+
+    function roof2Price(area, frame) {
+      if (!area) return 0;
+      const raw = area * ROOF2_RATE[frame];
+      return Math.max(ROOF2_MIN, Math.ceil(raw / 100) * 100);
+    }
 
     const FRAME_NAMES = {
       '50x50': '50 × 50 мм',
@@ -583,7 +601,8 @@
           (ROOF_MATERIALS[k].price ? ' +' + ROOF_MATERIALS[k].price + ' ₽/м²' : ' (в базе)') +
           '</option>').join('') +
         '</select></div>' +
-        '<div class="opt-row"><span>Тип</span><span class="pills" data-pills="roof">' +
+        '<div class="opt-row"><span>Тип <span class="price" id="roof2Rate"></span></span>' +
+        '<span class="pills" data-pills="roof">' +
         '<button data-val="1">1-скатная</button><button data-val="2" class="on">2-скатная</button>' +
         '</span></div>');
 
@@ -618,7 +637,7 @@
 
     // ----- ЧТЕНИЕ ДОП. ОПЦИЙ -----
 
-    function readOptions(dims, area, km) {
+    function readOptions(dims, area, km, frame) {
       const opts = document.getElementById('options');
       const pick = sel => opts.querySelector(sel);
       const countOf = row => parseInt(row.querySelector('.val').textContent, 10) || 0;
@@ -685,11 +704,12 @@
         ? (isPiles ? 'сваи ' + PILE_SIZES[pileSize].label : 'бетонные блоки') + ' ×' + foundCount
         : 'нужны размеры дома';
 
-      // кровля
+      // кровля: материал за м² плюс отдельная доплата за двускатность
       const roofKey = pick('[data-pills="roof"] button.on').dataset.val;
       const roofMat = pick('#roofMat').value;
-      const roofSum = ROOF_MATERIALS[roofMat].price * (area || 0) *
-        ROOF_TYPES[roofKey].factor + ROOF_TYPES[roofKey].extra;
+      const roofMatSum = ROOF_MATERIALS[roofMat].price * (area || 0);
+      const roof2Sum = roofKey === '2' ? roof2Price(area, frame) : 0;
+      const roofSum = roofMatSum + roof2Sum;
 
       // сводки по группам для свёрнутых заголовков
       const groups = {
@@ -699,7 +719,7 @@
                  text: partLen ? PARTITIONS[partKey].label + ' ' + partLen + ' м' : '' },
         found: { sum: foundSum, count: foundCount, text: foundText },
         roof:  { sum: roofSum,  count: roofSum ? 1 : 0,
-                 text: ROOF_MATERIALS[roofMat].short + ', ' + ROOF_TYPES[roofKey].label },
+                 text: ROOF_MATERIALS[roofMat].short + ', ' + ROOF_TYPES[roofKey].label.replace('-скатная', ' ската') },
         misc:  { sum: stepsSum + portageSum, count: miscParts.length, text: miscParts.join(', ') }
       };
 
@@ -710,7 +730,7 @@
         foundKey, isPiles, pileSize,
         liveOporA, liveOporB, liveOpor, terrOporA, terrOporB, terrOpor,
         foundCount, foundUnitPrice, foundBase, pileKmSum, foundSum,
-        roofKey, roofMat, roofSum,
+        roofKey, roofMat, roofMatSum, roof2Sum, roofSum,
         groups,
         total: winSum + doorSum + partSum + stepsSum + portageSum + foundSum + roofSum
       };
@@ -733,7 +753,7 @@
       function refreshAll() {
         const dims = readDims();
         const km = parseFloat(distanceInput.value) || 0;
-        const o = readOptions(dims, dims.totalArea, km);
+        const o = readOptions(dims, dims.totalArea, km, frameSelect.value);
 
         // сводка площадей
         const summary = document.getElementById('areaSummary');
@@ -767,6 +787,10 @@
           v.classList.toggle('zero', v.textContent.trim() === '0'));
 
         document.getElementById('partPrice').textContent = money(PARTITIONS[o.partKey].price) + '/м';
+
+        // ставка двускатной зависит от каркаса — показываем текущую
+        document.getElementById('roof2Rate').textContent =
+          '2 ската — ' + money(ROOF2_RATE[frameSelect.value]) + '/м², минимум ' + money(ROOF2_MIN);
         document.getElementById('portageRow').hidden = !o.portage;
         document.getElementById('pileSizeRow').hidden = !o.isPiles;
 
@@ -822,7 +846,7 @@
         const deliveryTotal = units * onePer;
         const assemblyTotal = units * oneAsm;
 
-        const o = readOptions(dims, dims.totalArea, km);
+        const o = readOptions(dims, dims.totalArea, km, frame);
 
         const total = liveSum + terrSum + deliveryTotal + assemblyTotal + o.total;
 
@@ -863,10 +887,15 @@
           rows += '<div class="result-row"><span>Доставка свай: ' + km + ' км × ' +
             money(PILE_PER_KM) + '</span><span>' + money(o.pileKmSum) + '</span></div>';
         }
-        if (o.roofSum) {
+        if (o.roofMatSum) {
           rows += '<div class="result-row"><span>Кровля ' + ROOF_MATERIALS[o.roofMat].label +
             ': ' + dims.totalArea.toFixed(1) + ' м² × ' + money(ROOF_MATERIALS[o.roofMat].price) +
-            '</span><span>' + money(o.roofSum) + '</span></div>';
+            '</span><span>' + money(o.roofMatSum) + '</span></div>';
+        }
+        if (o.roof2Sum) {
+          rows += '<div class="result-row"><span>Двускатная крыша: ' +
+            dims.totalArea.toFixed(1) + ' м² × ' + money(ROOF2_RATE[frame]) +
+            '</span><span>' + money(o.roof2Sum) + '</span></div>';
         }
         if (o.steps) {
           rows += '<div class="result-row"><span>Ступеньки</span><span>' +
