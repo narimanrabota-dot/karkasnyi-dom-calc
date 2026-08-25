@@ -1264,19 +1264,23 @@
     pEl.classList.toggle('neg', profit < 0);
   }
 
-  // одна маржа сразу на все позиции
-  function applyBulkMargin() {
+  // одна маржа сразу на все позиции. silent = вызвано вводом, а не кнопкой
+  function applyBulkMargin(silent) {
     const msg = $('pricesMsg');
-    let m = Number($('bulkMargin').value);
+    const raw = $('bulkMargin').value.trim();
+    let m = Number(raw);
 
-    if (isNaN(m) || $('bulkMargin').value.trim() === '') {
-      msg.hidden = false; msg.className = 'msg';
-      msg.textContent = 'Впишите процент маржинальности';
+    if (raw === '' || isNaN(m)) {
+      if (!silent) {
+        msg.hidden = false; msg.className = 'msg';
+        msg.textContent = 'Впишите процент маржинальности';
+      }
       return;
     }
     if (m < 0) m = 0;
     if (m > 95) m = 95;
-    $('bulkMargin').value = m;
+    // не переписываем поле во время набора — только по кнопке
+    if (!silent && Number(raw) !== m) $('bulkMargin').value = m;
 
     let touched = 0;
     $('pricesList').querySelectorAll('.prow[data-key]').forEach(row => {
@@ -1305,11 +1309,13 @@
     const btn = $('savePricesBtn');
     if (btn) btn.disabled = !$('pricesList').querySelector('input.dirty');
 
-    msg.hidden = false;
-    msg.className = 'msg ok';
-    msg.textContent = 'Маржа ' + m + '% проставлена на ' + touched +
-      ' ' + plural(touched, 'позицию', 'позиции', 'позиций') +
-      '. Проверьте розницу и нажмите «Сохранить изменения».';
+    if (!silent) {
+      msg.hidden = false;
+      msg.className = 'msg ok';
+      msg.textContent = 'Маржа ' + m + '% проставлена на ' + touched +
+        ' ' + plural(touched, 'позицию', 'позиции', 'позиций') +
+        '. Проверьте розницу и нажмите «Сохранить изменения».';
+    }
   }
 
   function addPosition(grp) {
@@ -1605,6 +1611,9 @@
     });
 
     document.addEventListener('input', e => {
+      // общая маржа — применяется прямо во время набора
+      if (e.target.id === 'bulkMargin') { applyBulkMargin(true); return; }
+
       const inp = e.target.closest('.prow input');
       if (!inp || !inp.dataset.f) return;
       const row = inp.closest('.prow');
