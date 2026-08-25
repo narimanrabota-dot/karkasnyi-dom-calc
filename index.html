@@ -929,7 +929,9 @@
       '<div class="opt-row" id="floorTerrHintRow" hidden><span class="price" id="floorTerrHint"></span></div>' +
       '<div class="opt-row" id="floorNoTerr"><span class="price">Терраса не выбрана — пол для неё не считается</span></div>' +
       '<div class="opt-row"><span>Сетка от грызунов <span class="price" id="meshHint"></span></span>' +
-      '<label class="switch"><input type="checkbox" id="floorMesh"><span class="track"></span></label></div>');
+      '<label class="switch"><input type="checkbox" id="floorMesh"><span class="track"></span></label></div>' +
+      '<div class="opt-row"><span>Обработка антисептиком <span class="price" id="antiHint"></span></span>' +
+      '<label class="switch"><input type="checkbox" id="floorAnti"><span class="track"></span></label></div>');
 
     const outOpts = PRICE_ROWS
       .filter(r => r.grp === 'Наружная отделка')
@@ -1077,6 +1079,7 @@
         floorLive: $('floorLive') ? $('floorLive').value : null,
         floorTerr: $('floorTerr') ? $('floorTerr').value : null,
         floorMesh: $('floorMesh') ? $('floorMesh').checked : false,
+        floorAnti: $('floorAnti') ? $('floorAnti').checked : false,
         outFinish: $('outFinish') ? $('outFinish').value : null,
         roofMat: $('roofMat') ? $('roofMat').value : null,
         roofType: pillVal('roof'),
@@ -1119,6 +1122,7 @@
     if (s.floorLive && $('floorLive')) $('floorLive').value = s.floorLive;
     if (s.floorTerr && $('floorTerr')) $('floorTerr').value = s.floorTerr;
     if ($('floorMesh')) $('floorMesh').checked = !!s.floorMesh;
+    if ($('floorAnti')) $('floorAnti').checked = !!s.floorAnti;
     if (s.outFinish && $('outFinish')) $('outFinish').value = s.outFinish;
     if (s.roofMat && $('roofMat')) $('roofMat').value = s.roofMat;
     setPill('roof', s.roofType);
@@ -1180,13 +1184,17 @@
     const floorTerrSum = (floorTerrKey && dims.terrArea) ? (P[floorTerrKey] || 0) * dims.terrArea : 0;
     const mesh = pick('#floorMesh') ? pick('#floorMesh').checked : false;
     const meshSum = mesh ? (P.floor_mesh || 0) * dims.liveArea : 0;
+    // антисептик — по всему полу, жилая часть вместе с террасой
+    const anti = pick('#floorAnti') ? pick('#floorAnti').checked : false;
+    const antiSum = anti ? (P.floor_antiseptic || 0) * (area || 0) : 0;
 
-    const floorSum = floorLiveSum + floorTerrSum + meshSum;
+    const floorSum = floorLiveSum + floorTerrSum + meshSum + antiSum;
 
     const floorParts = [];
     if (floorLiveKey) floorParts.push(labelOf(floorLiveKey));
     if (floorTerrKey && dims.terrArea) floorParts.push('терраса: ' + labelOf(floorTerrKey));
     if (mesh) floorParts.push('сетка от грызунов');
+    if (anti) floorParts.push('антисептик');
 
     const finishSel = pick('#finish') ? pick('#finish').value : null;
     const inExtraKey = finishSel ? FINISH_EXTRA[finishSel] : null;
@@ -1244,7 +1252,7 @@
       // счётчик показывает, сколько позиций выбрано, а не сколько они стоят:
       // цена может быть ещё не задана, но выбор менеджер уже сделал
       floor: { sum: floorSum, count: (floorLiveKey ? 1 : 0) +
-                      ((floorTerrKey && dims.terrArea) ? 1 : 0) + (mesh ? 1 : 0),
+                      ((floorTerrKey && dims.terrArea) ? 1 : 0) + (mesh ? 1 : 0) + (anti ? 1 : 0),
                text: floorParts.join(', ') },
       finish:{ sum: outSum + inExtraSum, count: (outKey ? 1 : 0) + (finishSel ? 1 : 0),
                text: (outKey ? 'снаружи ' + labelOf(outKey) : '') +
@@ -1262,7 +1270,7 @@
 
     return {
       wallKey, ridgeKey, ceilKey, wallSum, ridgeSum, paramSum,
-      floorLiveKey, floorTerrKey, floorLiveSum, floorTerrSum, mesh, meshSum, floorSum,
+      floorLiveKey, floorTerrKey, floorLiveSum, floorTerrSum, mesh, meshSum, anti, antiSum, floorSum,
       outKey, outSum, finishSel, inExtraKey, inExtraSum,
       winCount, winSum, doorCount, doorSum, partKey, partLen, partSum,
       steps, stepsSum, portage, portageM, portageSum,
@@ -1322,6 +1330,10 @@
     $('meshHint').textContent = P.floor_mesh
       ? money(P.floor_mesh) + '/м²' + (o.meshSum ? ' = ' + money(o.meshSum) : '')
       : 'цена не задана';
+    if ($('antiHint')) $('antiHint').textContent = P.floor_antiseptic
+      ? money(P.floor_antiseptic) + '/м² по всему полу' + (o.antiSum ? ' = ' + money(o.antiSum) : '')
+      : '';
+
     $('ventWallsHint').textContent = P.vent_walls
       ? money(P.vent_walls) + '/м²' + (o.ventWallsSum ? ' = ' + money(o.ventWallsSum) : '')
       : 'цена не задана';
@@ -1421,6 +1433,7 @@
     if (o.floorTerrSum) add('Пол террасы ' + labelOf(o.floorTerrKey) + ': ' + dims.terrArea.toFixed(1) +
       ' м² × ' + money(P[o.floorTerrKey]), o.floorTerrSum);
     if (o.meshSum) add('Сетка от грызунов: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(P.floor_mesh), o.meshSum);
+    if (o.antiSum) add('Обработка антисептиком: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.floor_antiseptic), o.antiSum);
     if (o.outSum) add('Наружная отделка ' + labelOf(o.outKey) + ': ' + dims.liveArea.toFixed(1) +
       ' м² × ' + money(P[o.outKey]), o.outSum);
     if (o.inExtraSum) add('Внутренняя отделка ' + labelOf(o.inExtraKey) + ': ' + dims.liveArea.toFixed(1) +
@@ -1646,6 +1659,7 @@
     wall_25:          'Доплата за стены 2,5 м. Умножается на общую площадь — жилая часть плюс терраса.',
     ridge_120:        'Доплата за конёк 120 см. Умножается на общую площадь — жилая часть плюс терраса.',
     floor_mesh:       'Умножается на площадь жилой части. Терраса не считается.',
+    floor_antiseptic: 'Умножается на всю площадь пола — жилая часть плюс терраса.',
     steps:            'Фиксированная сумма за ступеньки. От размеров домика не зависит.',
     portage_base:     'Фиксированная сумма за пронос материалов. Начисляется всегда, если пронос включён.',
     portage_per_m:    'Умножается на метры проноса, которые менеджер вписывает вручную.',
@@ -1705,8 +1719,10 @@
       if (m < 0) m = 0;
       if (m > 95) m = 95;              // выше 95% цена улетает в бесконечность
       if (m !== Number(mEl.value)) mEl.value = m;
-      // розница округляется вверх до сотен; при нулевой марже остаётся себестоимость
-      sEl.value = m > 0 ? Math.ceil(cost / (1 - m / 100) / 100) * 100 : cost;
+      // розница округляется вверх до сотен; при нулевой марже остаётся себестоимость.
+      // вычитаем крошечную поправку: 700 / 0,7 в дробной арифметике даёт 1000,0000000000001
+      // и без неё округление уводило цену на сотню вверх
+      sEl.value = m > 0 ? Math.ceil(cost / (1 - m / 100) / 100 - 1e-9) * 100 : cost;
     }
 
     const sale = Number(sEl.value) || 0;
