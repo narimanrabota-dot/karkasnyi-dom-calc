@@ -537,7 +537,7 @@
           <option value="osb">ОСБ</option>
           <option value="vagonka">Вагонка</option>
         </select>
-        <p class="hint">Снаружи всегда вагонка класса С, утепление минватой уже в цене.</p>
+        <p class="hint">Утепление минватой уже в цене. Наружная отделка — ниже, в «Дополнительно».</p>
       </div>
 
       <div class="field">
@@ -748,13 +748,14 @@
       .map(r => ({ id: r.key, group: r.sub || '', label: r.label, short: r.short || r.label }));
     WINDOWS = mk('Окна');
     DOORS = mk('Двери');
+
+    PARTITIONS = {};
+    PRICE_ROWS.filter(r => r.grp === 'Перегородки')
+      .forEach(r => { PARTITIONS[r.key] = r.label; });
   }
 
-  const PARTITIONS = {
-    part_dvp:     'ДВП',
-    part_osb:     'ОСБ',
-    part_vagonka: 'Вагонка'
-  };
+  // перегородки берутся из прайса — добавил позицию в админке, появилась здесь
+  let PARTITIONS = {};
 
   const PILE_SIZES = {
     pile_2000x76: '2000 × 76 мм',
@@ -771,8 +772,8 @@
   const FINISH_NAMES = { hozblok: 'Хозблок', orgalit: 'ДВП (оргалит)', osb: 'ОСБ', vagonka: 'Вагонка' };
 
   const GROUP_COLORS = {
-    param: '#3f8f8f', win: '#4f8fc0', door: '#b8763f', part: '#9a7bb5',
-    found: '#4f8f6b', roof: '#c9a227', misc: '#8c8f92'
+    param: '#3f8f8f', floor: '#6f8f4f', win: '#4f8fc0', door: '#b8763f',
+    part: '#9a7bb5', found: '#4f8f6b', roof: '#c9a227', misc: '#8c8f92'
   };
 
   // таблица «X+X» — количество доставок и сборок
@@ -814,6 +815,12 @@
   }
 
   const money = v => Math.round(v).toLocaleString('ru-RU') + ' ₽';
+
+  // наименование позиции прайса по ключу
+  const labelOf = key => {
+    const r = PRICE_ROWS.find(x => x.key === key);
+    return r ? (r.short || r.label) : key;
+  };
 
   function plural(n, one, few, many) {
     const m10 = n % 10, m100 = n % 100;
@@ -858,6 +865,62 @@
   function renderOptions() {
     let h = '<div class="options-title">Дополнительно</div>';
 
+    const floorOpts = sub => PRICE_ROWS
+      .filter(r => r.grp === 'Пол' && r.sub === sub)
+      .map(r => '<option value="' + r.key + '">' + r.label +
+        (P[r.key] ? ' — ' + P[r.key] + ' ₽/м²' : '') + '</option>').join('');
+
+    h += accGroup('floor', 'Пол',
+      '<div class="opt-row"><span>В жилой части</span>' +
+      '<select class="mini" id="floorLive">' + floorOpts('Жилая часть') + '</select></div>' +
+      '<div class="opt-row"><span class="price" id="floorLiveHint"></span></div>' +
+      '<div class="opt-row" id="floorTerrRow" hidden><span>На террасе</span>' +
+      '<select class="mini" id="floorTerr">' + floorOpts('Терраса') + '</select></div>' +
+      '<div class="opt-row" id="floorTerrHintRow" hidden><span class="price" id="floorTerrHint"></span></div>' +
+      '<div class="opt-row" id="floorNoTerr"><span class="price">Терраса не выбрана — пол для неё не считается</span></div>' +
+      '<div class="opt-row"><span>Сетка от грызунов <span class="price" id="meshHint"></span></span>' +
+      '<label class="switch"><input type="checkbox" id="floorMesh"><span class="track"></span></label></div>');
+
+    const outOpts = PRICE_ROWS
+      .filter(r => r.grp === 'Наружная отделка')
+      .map(r => '<option value="' + r.key + '">' + r.label +
+        (P[r.key] ? ' — ' + P[r.key] + ' ₽/м²' : '') + '</option>').join('');
+
+    h += accGroup('out', 'Наружная отделка',
+      '<div class="opt-row"><span>Материал стен</span>' +
+      '<select class="mini" id="outFinish">' + outOpts + '</select></div>' +
+      '<div class="opt-row"><span class="price" id="outHint"></span></div>');
+
+    h += accGroup('win', 'Окна', groupedRows('win', WINDOWS));
+    h += accGroup('door', 'Двери', groupedRows('door', DOORS));
+
+    h += accGroup('part', 'Перегородки',
+      '<div class="opt-row"><span>Материал</span>' +
+      '<select class="mini" id="partMat">' +
+      Object.keys(PARTITIONS).map(k =>
+        '<option value="' + k + '">' + PARTITIONS[k] +
+        (P[k] ? ' — ' + P[k] + ' ₽/м' : '') + '</option>').join('') +
+      '</select></div>' +
+      '<div class="opt-row" data-kind="part"><span>Длина, м <span class="price" id="partPrice"></span></span>' +
+      stepperHtml() + '</div>');
+
+    h += accGroup('found', 'Фундамент',
+      '<div class="opt-row"><span>Тип</span><span class="pills" data-pills="found">' +
+      '<button data-val="blocks">Бетонные блоки</button>' +
+      '<button data-val="piles" class="on">Винтовые сваи</button></span></div>' +
+      '<div class="opt-row" id="pileSizeRow" hidden><span>Размер сваи</span>' +
+      '<select class="mini" id="pileSize">' +
+      Object.keys(PILE_SIZES).sort().reverse().map(k =>
+        '<option value="' + k + '">' + PILE_SIZES[k] + ' — ' + P[k] + ' ₽</option>').join('') +
+      '</select></div>' +
+      '<div class="opt-row"><span id="foundLabel">Опоры</span>' +
+      '<span class="found-val">' +
+      '<span class="found-num" id="foundField">—</span>' +
+      '<input type="number" class="num" id="foundCount" min="0" step="1" hidden>' +
+      '<button class="addbtn" id="foundEdit">изменить</button>' +
+      '</span></div>' +
+      '<div class="opt-warn" id="foundWarn" hidden></div>');
+
     h += accGroup('param', 'Параметры дома',
       '<div class="opt-row"><span>Высота стен</span><span class="pills" data-pills="wall">' +
       '<button data-val="22" class="on">2,2 м</button>' +
@@ -868,37 +931,9 @@
       '<button data-val="120">120 см</button></span></div>' +
       '<div class="opt-row"><span class="price" id="ridgeHint"></span></div>' +
       '<div class="opt-row"><span>Потолок</span><span class="pills" data-pills="ceil">' +
-      '<button data-val="flat" class="on">Ровный</button>' +
-      '<button data-val="ridge">Под конёк</button></span></div>' +
+      '<button data-val="flat">Ровный</button>' +
+      '<button data-val="ridge" class="on">Под конёк</button></span></div>' +
       '<div class="opt-row"><span class="price">Тип потолка на цену не влияет</span></div>');
-
-    h += accGroup('win', 'Окна', groupedRows('win', WINDOWS));
-    h += accGroup('door', 'Двери', groupedRows('door', DOORS));
-
-    h += accGroup('part', 'Перегородки',
-      '<div class="opt-row"><span>Материал</span><span class="pills" data-pills="part">' +
-      Object.keys(PARTITIONS).map((k, i) =>
-        '<button data-val="' + k + '"' + (i === 0 ? ' class="on"' : '') + '>' +
-        PARTITIONS[k] + '</button>').join('') + '</span></div>' +
-      '<div class="opt-row" data-kind="part"><span>Длина, м <span class="price" id="partPrice"></span></span>' +
-      stepperHtml() + '</div>');
-
-    h += accGroup('found', 'Фундамент',
-      '<div class="opt-row"><span>Тип</span><span class="pills" data-pills="found">' +
-      '<button data-val="blocks" class="on">Бетонные блоки</button>' +
-      '<button data-val="piles">Винтовые сваи</button></span></div>' +
-      '<div class="opt-row" id="pileSizeRow" hidden><span>Размер сваи</span>' +
-      '<select class="mini" id="pileSize">' +
-      Object.keys(PILE_SIZES).map(k =>
-        '<option value="' + k + '">' + PILE_SIZES[k] + ' — ' + P[k] + ' ₽</option>').join('') +
-      '</select></div>' +
-      '<div class="opt-row"><span id="foundLabel">Опоры</span>' +
-      '<span class="found-val">' +
-      '<span class="found-num" id="foundField">—</span>' +
-      '<input type="number" class="num" id="foundCount" min="0" step="1" hidden>' +
-      '<button class="addbtn" id="foundEdit">изменить</button>' +
-      '</span></div>' +
-      '<div class="opt-warn" id="foundWarn" hidden></div>');
 
     h += accGroup('roof', 'Кровля',
       '<div class="opt-row"><span>Материал</span><select class="mini" id="roofMat">' +
@@ -970,12 +1005,16 @@
         frame: $('frame').value, finish: $('finish').value,
         distance: $('distance').value,
         counts: counts,
-        partMat: pillVal('part'),
+        partMat: $('partMat') ? $('partMat').value : null,
         partLen: partRow ? parseInt(partRow.querySelector('.val').textContent, 10) || 0 : 0,
         foundType: pillVal('found'),
         pileSize: $('pileSize') ? $('pileSize').value : null,
         foundManual: foundManual,
         foundEditing: foundEditing,
+        floorLive: $('floorLive') ? $('floorLive').value : null,
+        floorTerr: $('floorTerr') ? $('floorTerr').value : null,
+        floorMesh: $('floorMesh') ? $('floorMesh').checked : false,
+        outFinish: $('outFinish') ? $('outFinish').value : null,
         roofMat: $('roofMat') ? $('roofMat').value : null,
         roofType: pillVal('roof'),
         steps: $('steps').checked,
@@ -1003,7 +1042,7 @@
       if (row) row.querySelector('.val').textContent = s.counts[id];
     });
 
-    setPill('part', s.partMat);
+    if (s.partMat && $('partMat')) $('partMat').value = s.partMat;
     const partRow = opts.querySelector('[data-kind="part"]');
     if (partRow && s.partLen) partRow.querySelector('.val').textContent = s.partLen;
 
@@ -1012,6 +1051,10 @@
     foundManual = (s.foundManual === undefined) ? null : s.foundManual;
     foundEditing = !!s.foundEditing;
 
+    if (s.floorLive && $('floorLive')) $('floorLive').value = s.floorLive;
+    if (s.floorTerr && $('floorTerr')) $('floorTerr').value = s.floorTerr;
+    if ($('floorMesh')) $('floorMesh').checked = !!s.floorMesh;
+    if (s.outFinish && $('outFinish')) $('outFinish').value = s.outFinish;
     if (s.roofMat && $('roofMat')) $('roofMat').value = s.roofMat;
     setPill('roof', s.roofType);
 
@@ -1061,9 +1104,28 @@
     const paramParts = [];
     paramParts.push(wallKey === '25' ? 'стены 2,5 м' : 'стены 2,2 м');
     paramParts.push(ridgeKey === '120' ? 'конёк 120 см' : 'конёк 80 см');
-    paramParts.push(ceilKey === 'ridge' ? 'потолок под конёк' : 'потолок ровный');
+    paramParts.push(ceilKey === 'flat' ? 'потолок ровный' : 'потолок под конёк');
 
-    const partKey = pick('[data-pills="part"] button.on').dataset.val;
+    // пол: жилая часть считается по жилой площади, терраса — по своей
+    const floorLiveKey = pick('#floorLive') ? pick('#floorLive').value : null;
+    const floorTerrKey = pick('#floorTerr') ? pick('#floorTerr').value : null;
+    const floorLiveSum = floorLiveKey ? (P[floorLiveKey] || 0) * dims.liveArea : 0;
+    const floorTerrSum = (floorTerrKey && dims.terrArea) ? (P[floorTerrKey] || 0) * dims.terrArea : 0;
+    const floorSum = floorLiveSum + floorTerrSum + meshSum;
+
+    const mesh = pick('#floorMesh') ? pick('#floorMesh').checked : false;
+    const meshSum = mesh ? (P.floor_mesh || 0) * (area || 0) : 0;
+
+    const floorParts = [];
+    if (floorLiveKey) floorParts.push(labelOf(floorLiveKey));
+    if (floorTerrKey && dims.terrArea) floorParts.push('терраса: ' + labelOf(floorTerrKey));
+    if (mesh) floorParts.push('сетка от грызунов');
+
+    // наружная отделка стен — по общей площади
+    const outKey = pick('#outFinish') ? pick('#outFinish').value : null;
+    const outSum = outKey ? (P[outKey] || 0) * (area || 0) : 0;
+
+    const partKey = pick('#partMat') ? pick('#partMat').value : Object.keys(PARTITIONS)[0];
     const partLen = cnt(pick('[data-kind="part"]'));
     const partSum = partLen * P[partKey];
 
@@ -1101,6 +1163,9 @@
     const roofSum = roofMatSum + roof2Sum;
 
     const groups = {
+      floor: { sum: floorSum, count: (floorLiveSum ? 1 : 0) + (floorTerrSum ? 1 : 0) + (meshSum ? 1 : 0),
+               text: floorParts.join(', ') },
+      out:   { sum: outSum, count: outSum ? 1 : 0, text: outKey ? labelOf(outKey) : '' },
       param: { sum: paramSum, count: (wallKey === '25' ? 1 : 0) + (ridgeKey === '120' ? 1 : 0),
                text: paramParts.join(', ') },
       win:   { sum: winSum, count: winCount, text: winParts.join(', ') },
@@ -1114,12 +1179,14 @@
 
     return {
       wallKey, ridgeKey, ceilKey, wallSum, ridgeSum, paramSum,
+      floorLiveKey, floorTerrKey, floorLiveSum, floorTerrSum, mesh, meshSum, floorSum,
+      outKey, outSum,
       winCount, winSum, doorCount, doorSum, partKey, partLen, partSum,
       steps, stepsSum, portage, portageM, portageSum,
       foundKey, isPiles, pileSize, liveOporA, liveOporB, terrOporA, terrOporB, terrOpor,
       autoCount, foundCount, foundUnitPrice, foundBase, pileKmSum, foundSum,
       roofKey, roofMat, roofMatSum, roof2Sum, roofSum, groups,
-      total: paramSum + winSum + doorSum + partSum + stepsSum + portageSum + foundSum + roofSum
+      total: paramSum + floorSum + outSum + winSum + doorSum + partSum + stepsSum + portageSum + foundSum + roofSum
     };
   }
 
@@ -1156,6 +1223,24 @@
       v.classList.toggle('zero', v.textContent.trim() === '0'));
 
     $('partPrice').textContent = money(P[o.partKey]) + '/м';
+
+    const hasTerr = readDims().terrArea > 0;
+    $('floorTerrRow').hidden = !hasTerr;
+    $('floorTerrHintRow').hidden = !hasTerr;
+    $('floorNoTerr').hidden = hasTerr;
+
+    $('floorLiveHint').textContent = P[o.floorLiveKey]
+      ? money(P[o.floorLiveKey]) + ' за м² жилой площади' + (o.floorLiveSum ? ' = ' + money(o.floorLiveSum) : '')
+      : 'цена не задана';
+    $('floorTerrHint').textContent = (o.floorTerrKey && P[o.floorTerrKey])
+      ? money(P[o.floorTerrKey]) + ' за м² террасы' + (o.floorTerrSum ? ' = ' + money(o.floorTerrSum) : '')
+      : 'цена не задана';
+    $('meshHint').textContent = P.floor_mesh
+      ? money(P.floor_mesh) + '/м²' + (o.meshSum ? ' = ' + money(o.meshSum) : '')
+      : 'цена не задана';
+    $('outHint').textContent = P[o.outKey]
+      ? money(P[o.outKey]) + ' за м² общей площади' + (o.outSum ? ' = ' + money(o.outSum) : '')
+      : 'входит в базовую цену';
 
     $('wallHint').textContent = '2,2 м в базе · 2,5 м — ' + money(P.wall_25) +
       ' за м² общей площади' + (o.wallSum ? ' = ' + money(o.wallSum) : '');
@@ -1235,6 +1320,13 @@
     if (terrSum) add('Терраса: ' + dims.terrArea.toFixed(1) + ' м² × ' + money(terrPrice), terrSum);
     add('Доставка: ' + units + ' × ' + money(onePer), deliveryTotal);
     add('Сборка: ' + units + ' × ' + money(oneAsm), assemblyTotal);
+    if (o.floorLiveSum) add('Пол ' + labelOf(o.floorLiveKey) + ': ' + dims.liveArea.toFixed(1) +
+      ' м² × ' + money(P[o.floorLiveKey]), o.floorLiveSum);
+    if (o.floorTerrSum) add('Пол террасы ' + labelOf(o.floorTerrKey) + ': ' + dims.terrArea.toFixed(1) +
+      ' м² × ' + money(P[o.floorTerrKey]), o.floorTerrSum);
+    if (o.meshSum) add('Сетка от грызунов: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.floor_mesh), o.meshSum);
+    if (o.outSum) add('Наружная отделка ' + labelOf(o.outKey) + ': ' + dims.totalArea.toFixed(1) +
+      ' м² × ' + money(P[o.outKey]), o.outSum);
     if (o.wallSum) add('Стены 2,5 м: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.wall_25), o.wallSum);
     if (o.ridgeSum) add('Конёк 120 см: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.ridge_120), o.ridgeSum);
     if (o.winCount) add('Окна: ' + o.winCount + ' шт', o.winSum);
@@ -1764,6 +1856,24 @@
     }
   }
 
+  // Проверка, не вышла ли новая версия самого приложения.
+  // Цены живут в базе и обновляются сами, а разделы и логика — в этом файле,
+  // поэтому его тоже нужно подхватывать без ручной перезагрузки.
+  let appTag = null;
+  async function checkAppVersion() {
+    try {
+      const r = await fetch(location.pathname + '?v=' + Date.now(), { method: 'HEAD', cache: 'no-store' });
+      const tag = r.headers.get('etag') || r.headers.get('last-modified');
+      if (!tag) return;
+      if (appTag === null) { appTag = tag; return; }
+      if (tag !== appTag) {
+        appTag = tag;
+        toast('Вышло обновление калькулятора — обновляю страницу…');
+        setTimeout(() => location.reload(), 2500);
+      }
+    } catch (e) { /* нет связи — переживём */ }
+  }
+
   // короткое уведомление внизу экрана
   let toastTimer = null;
   function toast(text) {
@@ -1960,6 +2070,12 @@
     setInterval(() => {
       if (document.visibilityState === 'visible') refreshPricesIfStale(true);
     }, 12000);
+
+    // проверка, не вышла ли новая версия самого приложения
+    checkAppVersion();
+    setInterval(() => {
+      if (document.visibilityState === 'visible') checkAppVersion();
+    }, 60000);
 
     // восстановление сессии
     if (loadSession()) {
