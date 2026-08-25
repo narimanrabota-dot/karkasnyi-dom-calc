@@ -694,6 +694,7 @@
     P = {};
     PRICE_ROWS.forEach(r => { P[r.key] = Number(r.sale); });
     buildLists();
+    pricesLoadedAt = Date.now();
 
     if (isAdmin()) {
       const cr = await authFetch('/rest/v1/costs?select=key,cost');
@@ -1476,6 +1477,24 @@
     $('appScreen').classList.toggle('wide', name === 'prices');
     if (name === 'history') loadHistory();
     if (name === 'prices') loadCodes().then(renderPrices);
+    if (name === 'calc') refreshPricesIfStale();
+  }
+
+  // Прайс мог поменяться, пока менеджер сидел в приложении.
+  // Подтягиваем свежий, если прошло больше минуты.
+  let pricesLoadedAt = 0;
+
+  async function refreshPricesIfStale(force) {
+    if (!me || (me.role !== 'admin' && me.role !== 'manager')) return;
+    if (!force && Date.now() - pricesLoadedAt < 60000) return;
+    try {
+      const before = JSON.stringify(P);
+      await loadPrices();
+      if (JSON.stringify(P) !== before) {
+        renderOptions();
+        refreshAll();
+      }
+    } catch (e) { /* нет связи — считаем по тому, что есть */ }
   }
 
   async function startApp() {
@@ -1662,6 +1681,11 @@
       const btn = $('savePricesBtn');
       if (btn) btn.disabled = !$('pricesList').querySelector('input.dirty');
       if ($('pricesList').querySelector('input.dirty')) scheduleSave();
+    });
+
+    // вернулся во вкладку — проверяем, не поменялись ли цены
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshPricesIfStale();
     });
 
     // восстановление сессии
