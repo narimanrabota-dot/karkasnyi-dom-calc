@@ -44,7 +44,7 @@
       box-shadow: 0 30px 64px rgba(18, 42, 32, .40), 0 4px 10px rgba(18, 42, 32, .20);
     }
 
-    .shell.wide { max-width: 720px; }
+    .shell.wide { max-width: 980px; }
 
     [hidden] { display: none !important; }
 
@@ -295,27 +295,52 @@
       font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
       color: var(--ink-soft); margin: 18px 0 6px;
     }
-    .prow {
-      display: grid; grid-template-columns: 1fr 96px 96px;
-      gap: 8px; align-items: center; padding: 6px 0;
-      border-bottom: 1px solid var(--line);
+    .ptable { overflow-x: auto; }
+
+    .prow, .phead {
+      display: grid;
+      grid-template-columns: minmax(190px, 1fr) 110px 76px 84px 110px 130px;
+      gap: 8px; align-items: center;
+      min-width: 700px;
     }
+    .prow { padding: 5px 0; border-bottom: 1px solid var(--line); }
+
     .prow .lbl { font-size: 13.5px; }
     .prow .lbl small { display: block; color: var(--ink-soft); font-size: 11px; }
+
     .prow input {
       height: 36px; padding: 0 9px; font-size: 13px; text-align: right;
       background: var(--field); border: 1px solid var(--line); border-radius: 8px;
-      font-family: inherit; color: inherit; outline: none;
+      font-family: inherit; color: inherit; outline: none; width: 100%;
     }
+    .prow input.unit { text-align: center; font-size: 12px; color: var(--ink-soft); }
     .prow input:focus { border-color: var(--green); background: #fff; }
     .prow input.dirty { border-color: var(--green); background: #eef4f0; font-weight: 600; }
+
+    .prow .profit {
+      font-size: 12.5px; font-weight: 600; color: var(--green); text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .prow .profit.neg { color: var(--warn-ink); }
+
     .phead {
-      display: grid; grid-template-columns: 1fr 96px 96px; gap: 8px;
-      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
-      color: var(--ink-soft); padding-bottom: 4px;
-      position: sticky; top: 0; background: #fff;
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+      color: var(--ink-soft); padding-bottom: 6px;
+      position: sticky; top: 0; background: #fff; z-index: 2;
     }
     .phead span:not(:first-child) { text-align: right; }
+
+    .pgrp-row {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--ink-soft); margin: 16px 0 4px; min-width: 700px;
+    }
+    .addbtn {
+      border: 1px dashed var(--line); background: transparent; color: var(--green);
+      font: inherit; font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0;
+      padding: 3px 9px; border-radius: 7px; cursor: pointer;
+    }
+    .addbtn:hover { border-color: var(--green); background: var(--field); }
 
     .sticky-save {
       position: sticky; bottom: 0; background: #fff;
@@ -418,7 +443,7 @@
     <div class="tabs" id="tabs">
       <button data-tab="calc" class="on">Расчёт</button>
       <button data-tab="history">История</button>
-      <button data-tab="prices" id="tabPrices" hidden>Цены</button>
+      <button data-tab="prices" id="tabPrices" hidden>Ценообразование</button>
     </div>
 
     <!-- ---- вкладка: расчёт ---- -->
@@ -647,11 +672,13 @@
   }
 
   async function loadPrices() {
-    const res = await authFetch('/rest/v1/prices?select=key,grp,label,sale,unit,sort&order=grp,sort');
+    const cols = 'key,grp,sub,label,short,sale,margin,unit,sort';
+    const res = await authFetch('/rest/v1/prices?select=' + cols + '&order=grp,sort');
     if (!res.ok) throw new Error('Не удалось загрузить прайс');
     PRICE_ROWS = await res.json();
     P = {};
     PRICE_ROWS.forEach(r => { P[r.key] = Number(r.sale); });
+    buildLists();
 
     if (isAdmin()) {
       const cr = await authFetch('/rest/v1/costs?select=key,cost');
@@ -666,21 +693,18 @@
   //  СТРУКТУРА ОПЦИЙ (цены подставляются из P)
   // ============================================================
 
-  const WINDOWS = [
-    { id: 'win_pvh_60x90',   group: 'ПВХ',        label: '60 × 90 см',   short: '60×90' },
-    { id: 'win_pvh_100x100', group: 'ПВХ',        label: '100 × 100 см', short: '100×100' },
-    { id: 'win_pvh_100x120', group: 'ПВХ',        label: '100 × 120 см', short: '100×120' },
-    { id: 'win_pvh_200x80',  group: 'ПВХ',        label: '200 × 80 см',  short: '200×80' },
-    { id: 'win_wood_80x70',  group: 'Деревянные', label: '80 × 70 см',   short: '80×70 дер.' },
-    { id: 'win_wood_50x50',  group: 'Деревянные', label: '50 × 50 см',   short: '50×50 дер.' }
-  ];
+  // Окна и двери строятся из прайса — добавил позицию в «Ценообразовании»,
+  // она сразу появилась в калькуляторе.
+  let WINDOWS = [];
+  let DOORS = [];
 
-  const DOORS = [
-    { id: 'door_in_nabor', group: 'Входные',      label: 'Наборная',              short: 'вх. наборная' },
-    { id: 'door_in_metal', group: 'Входные',      label: 'Металлическая',         short: 'вх. металл.' },
-    { id: 'door_mk_nabor', group: 'Межкомнатные', label: 'Наборная',              short: 'мк. наборная' },
-    { id: 'door_mk_filen', group: 'Межкомнатные', label: 'Филёнчатая из массива', short: 'мк. филёнч.' }
-  ];
+  function buildLists() {
+    const mk = grp => PRICE_ROWS
+      .filter(r => r.grp === grp)
+      .map(r => ({ id: r.key, group: r.sub || '', label: r.label, short: r.short || r.label }));
+    WINDOWS = mk('Окна');
+    DOORS = mk('Двери');
+  }
 
   const PARTITIONS = {
     part_dvp:     'ДВП',
@@ -1145,27 +1169,120 @@
       '<div class="pgrp">Коды доступа</div>' +
       '<p class="hint" style="margin-bottom:8px">Кто введёт код при регистрации — получит эту роль. ' +
       'Смените код, и старый перестанет работать.</p>' +
-      '<div class="prow" style="grid-template-columns:1fr 200px">' +
+      '<div class="prow" style="grid-template-columns:1fr 200px; min-width:auto">' +
       '<span class="lbl">Админ<small>полный доступ, себестоимость, цены</small></span>' +
       '<input type="text" id="codeAdmin" value="' + (CODES.admin || '') + '" style="text-align:left"></div>' +
-      '<div class="prow" style="grid-template-columns:1fr 200px">' +
+      '<div class="prow" style="grid-template-columns:1fr 200px; min-width:auto">' +
       '<span class="lbl">Менеджер<small>только расчёт и свои сметы</small></span>' +
       '<input type="text" id="codeManager" value="' + (CODES.manager || '') + '" style="text-align:left"></div>' +
       '<div style="margin:10px 0 6px"><button class="primary" id="saveCodesBtn" style="height:40px;font-size:14px">Сохранить коды</button></div>' +
       '<div id="codesMsg"></div>';
 
-    html += '<div class="phead" style="margin-top:20px"><span>Позиция</span><span>Продажа</span><span>Себест.</span></div>';
+    html += '<div class="ptable"><div class="phead">' +
+      '<span>Наименование</span><span>Себестоимость</span><span>Единица</span>' +
+      '<span>Наценка&nbsp;%</span><span>Розница</span><span>Прибыль</span></div>';
+
     let lastGrp = '';
     PRICE_ROWS.forEach(r => {
-      if (r.grp !== lastGrp) { html += '<div class="pgrp">' + r.grp + '</div>'; lastGrp = r.grp; }
-      html += '<div class="prow" data-key="' + r.key + '">' +
-        '<span class="lbl">' + r.label + '<small>' + (r.unit || '') + '</small></span>' +
-        '<input type="number" step="1" data-f="sale" value="' + r.sale + '">' +
-        '<input type="number" step="1" data-f="cost" value="' + (COSTS[r.key] != null ? COSTS[r.key] : 0) + '">' +
-        '</div>';
+      if (r.grp !== lastGrp) {
+        html += '<div class="pgrp-row">' + r.grp +
+          (r.grp === 'Окна' || r.grp === 'Двери'
+            ? '<button class="addbtn" data-add="' + r.grp + '">+ добавить</button>' : '') +
+          '</div>';
+        lastGrp = r.grp;
+      }
+      const cost = COSTS[r.key] != null ? COSTS[r.key] : 0;
+      html += priceRowHtml(r, cost);
     });
+
+    html += '</div>';
     html += '<div class="sticky-save"><button class="primary" id="savePricesBtn" disabled>Сохранить изменения</button></div>';
     box.innerHTML = html;
+    PRICE_ROWS.forEach(r => recalcRow(r.key));
+  }
+
+  function priceRowHtml(r, cost) {
+    return '<div class="prow" data-key="' + r.key + '">' +
+      '<span class="lbl">' + r.label + (r.sub ? '<small>' + r.sub + '</small>' : '') + '</span>' +
+      '<input type="number" step="1" data-f="cost" value="' + cost + '">' +
+      '<input type="text" data-f="unit" value="' + (r.unit || '') + '" class="unit">' +
+      '<input type="number" step="0.1" data-f="margin" value="' + Number(r.margin) + '">' +
+      '<input type="number" step="1" data-f="sale" value="' + Number(r.sale) + '">' +
+      '<span class="profit" data-f="profit">—</span>' +
+      '</div>';
+  }
+
+  // наценка меняет розницу, правка розницы меняет наценку
+  function recalcRow(key, driver) {
+    const row = document.querySelector('.prow[data-key="' + key + '"]');
+    if (!row) return;
+    const cost = Number(row.querySelector('[data-f="cost"]').value) || 0;
+    const mEl = row.querySelector('[data-f="margin"]');
+    const sEl = row.querySelector('[data-f="sale"]');
+
+    if (driver === 'sale') {
+      const sale = Number(sEl.value) || 0;
+      mEl.value = cost > 0 ? Math.round((sale / cost - 1) * 1000) / 10 : 0;
+    } else {
+      const margin = Number(mEl.value) || 0;
+      sEl.value = Math.round(cost * (1 + margin / 100));
+    }
+
+    const sale = Number(sEl.value) || 0;
+    const profit = sale - cost;
+    const marzha = sale > 0 ? Math.round(profit / sale * 1000) / 10 : 0;
+    const pEl = row.querySelector('[data-f="profit"]');
+    pEl.textContent = profit ? money(profit) + '  ·  ' + marzha + '%' : '—';
+    pEl.classList.toggle('neg', profit < 0);
+  }
+
+  function addPosition(grp) {
+    const label = prompt(grp === 'Окна'
+      ? 'Название нового окна, например: 120 × 150 см'
+      : 'Название новой двери, например: Входная утеплённая');
+    if (!label || !label.trim()) return;
+
+    const sub = prompt(grp === 'Окна'
+      ? 'Подгруппа: ПВХ или Деревянные'
+      : 'Подгруппа: Входные или Межкомнатные');
+    if (!sub || !sub.trim()) return;
+
+    const cost = Number(prompt('Себестоимость, ₽ за штуку') || 0);
+    if (!cost) return;
+
+    const key = (grp === 'Окна' ? 'win_' : 'door_') + 'x' + Date.now().toString(36);
+    const maxSort = Math.max(0, ...PRICE_ROWS.filter(r => r.grp === grp).map(r => r.sort));
+
+    (async () => {
+      try {
+        let res = await authFetch('/rest/v1/prices', {
+          method: 'POST', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            key: key, grp: grp, sub: sub.trim(), label: label.trim(),
+            short: label.trim(), sale: cost, margin: 0, unit: '₽/шт', sort: maxSort + 1
+          })
+        });
+        if (!res.ok) throw new Error(await res.text());
+
+        res = await authFetch('/rest/v1/costs', {
+          method: 'POST', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ key: key, cost: cost })
+        });
+        if (!res.ok) throw new Error(await res.text());
+
+        await loadPrices();
+        renderOptions();
+        refreshAll();
+        renderPrices();
+        const m = $('pricesMsg');
+        m.hidden = false; m.className = 'msg ok';
+        m.textContent = 'Позиция «' + label.trim() + '» добавлена и уже доступна в расчёте.';
+      } catch (e) {
+        const m = $('pricesMsg');
+        m.hidden = false; m.className = 'msg';
+        m.textContent = 'Не удалось добавить: ' + e.message;
+      }
+    })();
   }
 
   async function savePrices() {
@@ -1173,12 +1290,22 @@
     btn.disabled = true; btn.textContent = 'Сохраняю…';
 
     const priceUpd = [], costUpd = [];
-    $('pricesList').querySelectorAll('.prow').forEach(row => {
+    $('pricesList').querySelectorAll('.prow[data-key]').forEach(row => {
       const key = row.dataset.key;
+      const src = PRICE_ROWS.find(r => r.key === key);
+      if (!src) return;
+
       const sale = Number(row.querySelector('[data-f="sale"]').value);
       const cost = Number(row.querySelector('[data-f="cost"]').value);
-      const src = PRICE_ROWS.find(r => r.key === key);
-      if (Number(src.sale) !== sale) priceUpd.push({ key: key, grp: src.grp, label: src.label, sale: sale, unit: src.unit, sort: src.sort });
+      const margin = Number(row.querySelector('[data-f="margin"]').value);
+      const unit = row.querySelector('[data-f="unit"]').value.trim();
+
+      if (Number(src.sale) !== sale || Number(src.margin) !== margin || (src.unit || '') !== unit) {
+        priceUpd.push({
+          key: key, grp: src.grp, sub: src.sub, label: src.label, short: src.short,
+          sale: sale, margin: margin, unit: unit, sort: src.sort
+        });
+      }
       if ((COSTS[key] || 0) !== cost) costUpd.push({ key: key, cost: cost });
     });
 
@@ -1376,6 +1503,9 @@
       if (e.target.closest('#saveBtn')) saveQuote();
       if (e.target.closest('#savePricesBtn')) savePrices();
 
+      const addBtn = e.target.closest('[data-add]');
+      if (addBtn) addPosition(addBtn.dataset.add);
+
       if (e.target.closest('#saveCodesBtn')) {
         const btn = $('saveCodesBtn'), msg = $('codesMsg');
         const a = $('codeAdmin').value.trim(), m = $('codeManager').value.trim();
@@ -1403,11 +1533,27 @@
       const key = row.dataset.key;
       const src = PRICE_ROWS.find(r => r.key === key);
       if (!src) return;
-      const orig = inp.dataset.f === 'sale' ? Number(src.sale) : (COSTS[key] || 0);
-      inp.classList.toggle('dirty', Number(inp.value) !== orig);
-      const anyDirty = !!$('pricesList').querySelector('input.dirty');
+
+      const f = inp.dataset.f;
+      if (f === 'cost' || f === 'margin') recalcRow(key);
+      if (f === 'sale') recalcRow(key, 'sale');
+
+      // подсветка изменённого
+      const orig = {
+        cost: COSTS[key] || 0,
+        sale: Number(src.sale),
+        margin: Number(src.margin),
+        unit: src.unit || ''
+      };
+      row.querySelectorAll('input[data-f]').forEach(el => {
+        const k = el.dataset.f;
+        if (orig[k] === undefined) return;
+        const now = k === 'unit' ? el.value.trim() : Number(el.value);
+        el.classList.toggle('dirty', now !== orig[k]);
+      });
+
       const btn = $('savePricesBtn');
-      if (btn) btn.disabled = !anyDirty;
+      if (btn) btn.disabled = !$('pricesList').querySelector('input.dirty');
     });
 
     // восстановление сессии
