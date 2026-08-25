@@ -296,6 +296,13 @@
     .quote-head .tot { margin-left: auto; font-weight: 700; color: var(--green); white-space: nowrap; }
     .quote-who { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
     .quote-body { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .quote-del {
+      border: 0; background: none; cursor: pointer; padding: 2px 4px;
+      font-size: 12px; color: var(--ink-soft); line-height: 1;
+      opacity: .55; transition: opacity .15s, color .15s;
+    }
+    .quote-del:hover { opacity: 1; color: #b03a3a; }
+    .quote-del:disabled { opacity: .3; cursor: default; }
     .empty { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 30px 0; }
 
     /* ---------- админка цен ---------- */
@@ -823,6 +830,9 @@
   }
 
   const money = v => Math.round(v).toLocaleString('ru-RU') + ' ₽';
+  const esc = s => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
   // наименование позиции прайса по ключу
   const labelOf = key => {
@@ -1472,10 +1482,17 @@
         const dt = d.toLocaleDateString('ru-RU') + ' ' +
           d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         const who = isAdmin() && names[q.user_id] ? '<div class="quote-who">' + names[q.user_id] + '</div>' : '';
+        const mine = me && q.user_id === me.id;
+        const cl = q.client_name || 'Без названия';
+        const del = (mine || isAdmin())
+          ? '<button class="quote-del" data-qdel="' + q.id + '" ' +
+            'data-qname="' + esc(cl) + '" data-qtot="' + money(q.total) + '" ' +
+            'title="Удалить смету">удалить</button>'
+          : '';
         return '<div class="quote" data-id="' + q.id + '">' +
-          '<div class="quote-head"><span class="cl">' + (q.client_name || 'Без названия') + '</span>' +
+          '<div class="quote-head"><span class="cl">' + esc(cl) + '</span>' +
           '<span class="dt">' + dt + '</span>' +
-          '<span class="tot">' + money(q.total) + '</span></div>' + who +
+          '<span class="tot">' + money(q.total) + '</span>' + del + '</div>' + who +
           '<div class="quote-body" hidden>' +
           (q.breakdown && q.breakdown.lines || []).map(l =>
             '<div class="result-row"><span>' + l.t + '</span><span>' + money(l.v) + '</span></div>').join('') +
@@ -1483,6 +1500,38 @@
       }).join('');
     } catch (e) {
       box.innerHTML = '<div class="msg">' + e.message + '</div>';
+    }
+  }
+
+  // удаление сметы: спрашиваем, ждём ответ базы, только потом убираем строку
+  async function deleteQuote(btn) {
+    const id = btn.dataset.qdel;
+    const name = btn.dataset.qname || 'Без названия';
+    const tot = btn.dataset.qtot || '';
+    if (!confirm('Удалить смету «' + name + '» на ' + tot + '?\n\nВосстановить будет нельзя.')) return;
+
+    const card = btn.closest('.quote');
+    btn.disabled = true;
+    btn.textContent = 'удаляю…';
+    try {
+      const res = await authFetch('/rest/v1/quotes?id=eq.' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { Prefer: 'return=representation' }
+      });
+      if (!res.ok) throw new Error('база отказала (' + res.status + ')');
+      // база может ответить «успех», но ничего не удалить, если нет прав
+      const gone = await res.json().catch(() => []);
+      if (!gone.length) throw new Error('нет прав на удаление этой сметы');
+      card.remove();
+      const box = $('historyList');
+      if (!box.querySelector('.quote')) {
+        box.innerHTML = '<div class="empty">Пока ни одной сохранённой сметы.<br>' +
+          'Посчитайте и нажмите «Сохранить смету».</div>';
+      }
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'удалить';
+      alert('Не удалось удалить: ' + e.message);
     }
   }
 
@@ -2080,6 +2129,11 @@
 
       const delBtn = e.target.closest('[data-del]');
       if (delBtn) deleteUser(delBtn.dataset.del);
+
+      // кнопка удаления сметы — раньше проверки клика по карточке,
+      // иначе нажатие заодно развернёт расшифровку
+      const qDel = e.target.closest('[data-qdel]');
+      if (qDel) { e.stopPropagation(); deleteQuote(qDel); return; }
 
       const qh = e.target.closest('.quote-head');
       if (qh) {
