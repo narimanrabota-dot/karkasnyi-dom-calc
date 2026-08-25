@@ -1161,7 +1161,7 @@
     const floorLiveSum = floorLiveKey ? (P[floorLiveKey] || 0) * dims.liveArea : 0;
     const floorTerrSum = (floorTerrKey && dims.terrArea) ? (P[floorTerrKey] || 0) * dims.terrArea : 0;
     const mesh = pick('#floorMesh') ? pick('#floorMesh').checked : false;
-    const meshSum = mesh ? (P.floor_mesh || 0) * (area || 0) : 0;
+    const meshSum = mesh ? (P.floor_mesh || 0) * dims.liveArea : 0;
 
     const floorSum = floorLiveSum + floorTerrSum + meshSum;
 
@@ -1174,9 +1174,9 @@
     const inExtraKey = finishSel ? FINISH_EXTRA[finishSel] : null;
     const inExtraSum = inExtraKey ? (P[inExtraKey] || 0) * dims.liveArea : 0;
 
-    // наружная отделка стен — по общей площади
+    // наружная отделка стен — по жилой площади, без террасы
     const outKey = pick('#outFinish') ? pick('#outFinish').value : null;
-    const outSum = outKey ? (P[outKey] || 0) * (area || 0) : 0;
+    const outSum = outKey ? (P[outKey] || 0) * dims.liveArea : 0;
 
     const partKey = pick('#partMat') ? pick('#partMat').value : Object.keys(PARTITIONS)[0];
     const partLen = cnt(pick('[data-kind="part"]'));
@@ -1189,7 +1189,7 @@
     const portageSum = portage ? P.portage_base + portageM * P.portage_per_m : 0;
     const ventWalls = pick('#ventWalls') ? pick('#ventWalls').checked : false;
     const ventRoof  = pick('#ventRoof')  ? pick('#ventRoof').checked  : false;
-    const ventWallsSum = ventWalls ? (P.vent_walls || 0) * (area || 0) : 0;
+    const ventWallsSum = ventWalls ? (P.vent_walls || 0) * dims.liveArea : 0;
     const ventRoofSum  = ventRoof  ? (P.vent_roof  || 0) * (area || 0) : 0;
 
     const miscParts = [];
@@ -1316,7 +1316,7 @@
       : 'входит в стоимость домика';
 
     $('outHint').textContent = P[o.outKey]
-      ? money(P[o.outKey]) + ' за м² общей площади' + (o.outSum ? ' = ' + money(o.outSum) : '')
+      ? money(P[o.outKey]) + ' за м² жилой площади' + (o.outSum ? ' = ' + money(o.outSum) : '')
       : 'входит в базовую цену';
 
     $('wallHint').textContent = '2,2 м в базе · 2,5 м — ' + money(P.wall_25) +
@@ -1401,8 +1401,8 @@
       ' м² × ' + money(P[o.floorLiveKey]), o.floorLiveSum);
     if (o.floorTerrSum) add('Пол террасы ' + labelOf(o.floorTerrKey) + ': ' + dims.terrArea.toFixed(1) +
       ' м² × ' + money(P[o.floorTerrKey]), o.floorTerrSum);
-    if (o.meshSum) add('Сетка от грызунов: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.floor_mesh), o.meshSum);
-    if (o.outSum) add('Наружная отделка ' + labelOf(o.outKey) + ': ' + dims.totalArea.toFixed(1) +
+    if (o.meshSum) add('Сетка от грызунов: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(P.floor_mesh), o.meshSum);
+    if (o.outSum) add('Наружная отделка ' + labelOf(o.outKey) + ': ' + dims.liveArea.toFixed(1) +
       ' м² × ' + money(P[o.outKey]), o.outSum);
     if (o.inExtraSum) add('Внутренняя отделка ' + labelOf(o.inExtraKey) + ': ' + dims.liveArea.toFixed(1) +
       ' м² × ' + money(P[o.inExtraKey]), o.inExtraSum);
@@ -1419,7 +1419,7 @@
     if (o.roof2Sum) add('Двускатная крыша: ' + dims.totalArea.toFixed(1) + ' м² × ' +
       money(P['roof2_' + frame]), o.roof2Sum);
     if (o.steps) add('Ступеньки', o.stepsSum);
-    if (o.ventWallsSum) add('Вентзазор стен: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.vent_walls), o.ventWallsSum);
+    if (o.ventWallsSum) add('Вентзазор стен: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(P.vent_walls), o.ventWallsSum);
     if (o.ventRoofSum) add('Вентзазор крыши: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.vent_roof), o.ventRoofSum);
     if (o.portage) add('Пронос материалов: ' + money(P.portage_base) + ' + ' + o.portageM +
       ' м × ' + money(P.portage_per_m), o.portageSum);
