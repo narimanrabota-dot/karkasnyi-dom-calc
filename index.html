@@ -529,16 +529,8 @@
         </select>
       </div>
 
-      <div class="field">
-        <label for="finish">Отделка внутри жилой части</label>
-        <select id="finish">
-          <option value="hozblok">Хозблок</option>
-          <option value="orgalit">ДВП (оргалит)</option>
-          <option value="osb">ОСБ</option>
-          <option value="vagonka">Вагонка</option>
-        </select>
-        <p class="hint">Утепление минватой уже в цене. Наружная отделка — ниже, в «Дополнительно».</p>
-      </div>
+      <p class="hint" style="margin:-6px 0 14px">Утепление минватой уже в цене.
+        Отделка снаружи и внутри — ниже, в «Дополнительно».</p>
 
       <div class="field">
         <label for="distance">Дистанция доставки, км</label>
@@ -659,7 +651,7 @@
     v = v.replace(/[^a-z0-9._-]/g, '');
     return v + DOMAIN;
   };
-  const toLogin = email => (email || '').replace(DOMAIN, '');
+  const toLogin = email => (email || '').split('@')[0];
 
   function checkLogin(login) {
     const v = login.trim();
@@ -785,9 +777,12 @@
   const FINISH_NAMES = { hozblok: 'Хозблок', orgalit: 'ДВП (оргалит)', osb: 'ОСБ', vagonka: 'Вагонка' };
 
   const GROUP_COLORS = {
-    param: '#3f8f8f', floor: '#6f8f4f', win: '#4f8fc0', door: '#b8763f',
-    part: '#9a7bb5', found: '#4f8f6b', roof: '#c9a227', misc: '#8c8f92'
+    floor: '#6f8f4f', finish: '#c07a8f', win: '#4f8fc0', door: '#b8763f',
+    part: '#9a7bb5', found: '#4f8f6b', param: '#3f8f8f', roof: '#c9a227',
+    misc: '#8c8f92'
   };
+  // запасной цвет, чтобы рейка не пропадала у новых групп
+  const groupColor = key => GROUP_COLORS[key] || '#8c8f92';
 
   // таблица «X+X» — количество доставок и сборок
   const UNITS_TABLE = {
@@ -868,7 +863,7 @@
   }
 
   function accGroup(key, title, body) {
-    return '<div class="acc-group" data-group="' + key + '" style="--gc: ' + GROUP_COLORS[key] + '">' +
+    return '<div class="acc-group" data-group="' + key + '" style="--gc: ' + groupColor(key) + '">' +
       '<div class="ah" data-acc="' + key + '">' +
         '<span class="cnt off">0</span><span class="name">' + title + '</span>' +
         '<span class="ell"></span><span class="sum off">0 ₽</span><span class="arrow">⌄</span>' +
@@ -899,10 +894,18 @@
       .map(r => '<option value="' + r.key + '">' + r.label +
         (P[r.key] ? ' — ' + P[r.key] + ' ₽/м²' : '') + '</option>').join('');
 
-    h += accGroup('out', 'Наружная отделка',
-      '<div class="opt-row"><span>Материал стен</span>' +
+    h += accGroup('finish', 'Отделка',
+      '<div class="opt-row"><span>Снаружи стен</span>' +
       '<select class="mini" id="outFinish">' + outOpts + '</select></div>' +
-      '<div class="opt-row"><span class="price" id="outHint"></span></div>');
+      '<div class="opt-row"><span class="price" id="outHint"></span></div>' +
+      '<div class="opt-row"><span>Внутри жилой части</span>' +
+      '<select class="mini" id="finish">' +
+      '<option value="hozblok">Хозблок</option>' +
+      '<option value="orgalit">ДВП (оргалит)</option>' +
+      '<option value="osb">ОСБ</option>' +
+      '<option value="vagonka">Вагонка</option>' +
+      '</select></div>' +
+      '<div class="opt-row"><span class="price" id="inHint"></span></div>');
 
     h += accGroup('win', 'Окна', groupedRows('win', WINDOWS));
     h += accGroup('door', 'Двери', groupedRows('door', DOORS));
@@ -1019,7 +1022,8 @@
         liveA: $('liveA').value, liveB: $('liveB').value,
         terrace: $('hasTerrace').checked,
         terrA: $('terrA').value, terrB: $('terrB').value,
-        frame: $('frame').value, finish: $('finish').value,
+        frame: $('frame').value,
+        finish: $('finish') ? $('finish').value : null,
         distance: $('distance').value,
         counts: counts,
         partMat: $('partMat') ? $('partMat').value : null,
@@ -1142,6 +1146,8 @@
     if (floorTerrKey && dims.terrArea) floorParts.push('терраса: ' + labelOf(floorTerrKey));
     if (mesh) floorParts.push('сетка от грызунов');
 
+    const finishSel = pick('#finish') ? pick('#finish').value : null;
+
     // наружная отделка стен — по общей площади
     const outKey = pick('#outFinish') ? pick('#outFinish').value : null;
     const outSum = outKey ? (P[outKey] || 0) * (area || 0) : 0;
@@ -1193,7 +1199,9 @@
     const groups = {
       floor: { sum: floorSum, count: (floorLiveSum ? 1 : 0) + (floorTerrSum ? 1 : 0) + (meshSum ? 1 : 0),
                text: floorParts.join(', ') },
-      out:   { sum: outSum, count: outSum ? 1 : 0, text: outKey ? labelOf(outKey) : '' },
+      finish:{ sum: outSum, count: outSum ? 1 : 0,
+               text: (outKey ? 'снаружи ' + labelOf(outKey) : '') +
+                     (finishSel ? ', внутри ' + FINISH_NAMES[finishSel].toLowerCase() : '') },
       param: { sum: paramSum, count: (wallKey === '25' ? 1 : 0) + (ridgeKey === '120' ? 1 : 0),
                text: paramParts.join(', ') },
       win:   { sum: winSum, count: winCount, text: winParts.join(', ') },
@@ -1208,7 +1216,7 @@
     return {
       wallKey, ridgeKey, ceilKey, wallSum, ridgeSum, paramSum,
       floorLiveKey, floorTerrKey, floorLiveSum, floorTerrSum, mesh, meshSum, floorSum,
-      outKey, outSum,
+      outKey, outSum, finishSel,
       winCount, winSum, doorCount, doorSum, partKey, partLen, partSum,
       steps, stepsSum, portage, portageM, portageSum,
       foundKey, isPiles, pileSize, liveOporA, liveOporB, terrOporA, terrOporB, terrOpor,
@@ -1272,6 +1280,11 @@
     $('ventRoofHint').textContent = P.vent_roof
       ? money(P.vent_roof) + '/м²' + (o.ventRoofSum ? ' = ' + money(o.ventRoofSum) : '')
       : 'цена не задана';
+
+    const inKey = 'm2_' + $('frame').value + '_' + (o.finishSel || 'hozblok');
+    if ($('inHint')) $('inHint').textContent = P[inKey]
+      ? money(P[inKey]) + ' за м² жилой площади — уже в стоимости дома'
+      : 'входит в стоимость дома';
 
     $('outHint').textContent = P[o.outKey]
       ? money(P[o.outKey]) + ' за м² общей площади' + (o.outSum ? ' = ' + money(o.outSum) : '')
@@ -1478,26 +1491,34 @@
   // ============================================================
 
   // если у всех денежных позиций одна и та же маржа — показываем её в общем поле
+  // самая частая маржа среди денежных позиций
   function commonMargin() {
     const vals = PRICE_ROWS
       .filter(r => (r.unit || '').indexOf('₽') !== -1)
       .map(r => Number(r.margin));
     if (!vals.length) return null;
-    return vals.every(v => v === vals[0]) ? vals[0] : null;
+    const count = {};
+    vals.forEach(v => { count[v] = (count[v] || 0) + 1; });
+    let best = null, bestN = 0;
+    Object.keys(count).forEach(v => { if (count[v] > bestN) { bestN = count[v]; best = Number(v); } });
+    return { value: best, all: bestN === vals.length, n: bestN, total: vals.length };
   }
 
   function renderPrices() {
     const box = $('pricesList');
+    const cm = commonMargin();
     let html = '<div class="pgrp">Общая маржинальность</div>' +
       '<div class="bulk">' +
       '<input type="number" id="bulkMargin" step="0.1" min="0" max="95" placeholder="—"' +
-      (commonMargin() !== null ? ' value="' + commonMargin() + '"' : '') + '>' +
+      (cm ? ' value="' + cm.value + '"' : '') + '>' +
       '<span class="bulk-pct">%</span>' +
       '<button class="addbtn" id="bulkApply">Применить ко всем позициям</button>' +
       '<span class="bulk-hint">' +
-      (commonMargin() !== null
-        ? 'Сейчас у всех позиций маржа ' + commonMargin() + '%. Впишите другую — пересчитается всё.'
-        : 'У позиций разная маржа. Впишите процент, чтобы поставить одинаковый везде.') +
+      (!cm ? 'Впишите процент, чтобы поставить одинаковый везде.'
+           : cm.all
+             ? 'Сейчас у всех позиций маржа ' + cm.value + '%. Впишите другую — пересчитается всё.'
+             : 'У большинства позиций маржа ' + cm.value + '% (' + cm.n + ' из ' + cm.total +
+               '). Впишите процент, чтобы поставить одинаковый везде.') +
       '</span>' +
       '</div>';
 
@@ -2030,7 +2051,8 @@
 
     $('calcBtn').addEventListener('click', calculate);
 
-    ['frame', 'finish', 'hasTerrace'].forEach(id =>
+    // «finish» живёт внутри блока опций — там уже есть общий обработчик
+    ['frame', 'hasTerrace'].forEach(id =>
       $(id).addEventListener('change', refreshAll));
     ['liveA', 'liveB', 'terrA', 'terrB', 'distance'].forEach(id => {
       $(id).addEventListener('input', refreshAll);
