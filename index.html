@@ -409,28 +409,6 @@
     </p>
   </div>
 
-  <!-- ============ ЭКРАН ВВОДА КОДА (аккаунт без роли) ============ -->
-  <div class="shell" id="codeScreen" hidden>
-    <div class="login-head">
-      <h1>Нужен код доступа</h1>
-      <p class="subtitle">Аккаунт создан, но доступ ещё не открыт. Введите код, который выдал руководитель.</p>
-    </div>
-
-    <div class="msg" id="codeMsg" hidden></div>
-
-    <form id="codeForm">
-      <div class="field">
-        <label for="codeInput">Код доступа</label>
-        <input type="text" id="codeInput" required>
-      </div>
-      <button class="primary" type="submit" id="codeBtn">Открыть доступ</button>
-    </form>
-
-    <p style="text-align:center; margin-top:16px">
-      <button class="linkbtn" id="codeLogout">выйти</button>
-    </p>
-  </div>
-
   <!-- ============ ЗАГРУЗКА ============ -->
   <div class="shell" id="bootScreen">
     <div class="spinner">Загрузка…</div>
@@ -648,20 +626,6 @@
 
     // сразу входим — подтверждение по почте отключено
     await login(clean, password);
-  }
-
-  // Код проверяет база. В коде страницы его нет.
-  async function redeemCode(code) {
-    const res = await authFetch('/rest/v1/rpc/redeem_code', {
-      method: 'POST',
-      body: JSON.stringify({ p_code: code.trim() })
-    });
-    if (!res.ok) {
-      const t = await res.text();
-      if (t.includes('Неверный код')) throw new Error('Неверный код доступа');
-      throw new Error('Не удалось применить код');
-    }
-    return res.json();
   }
 
   function logout() {
@@ -1156,23 +1120,6 @@
   //  АДМИНКА ЦЕН
   // ============================================================
 
-  let CODES = {};
-
-  async function loadCodes() {
-    const r = await authFetch('/rest/v1/access_codes?select=role,code');
-    if (r.ok) { CODES = {}; (await r.json()).forEach(c => { CODES[c.role] = c.code; }); }
-  }
-
-  async function saveCode(role, code) {
-    const r = await authFetch('/rest/v1/access_codes?role=eq.' + role, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ code: code, updated_at: new Date().toISOString() })
-    });
-    if (!r.ok) throw new Error(await r.text());
-    CODES[role] = code;
-  }
-
   function renderPrices() {
     const box = $('pricesList');
     let html = '<div class="pgrp">Общая маржинальность</div>' +
@@ -1434,7 +1381,6 @@
   function show(which) {
     $('bootScreen').hidden = which !== 'boot';
     $('loginScreen').hidden = which !== 'login';
-    $('codeScreen').hidden = which !== 'code';
     $('appScreen').hidden = which !== 'app';
   }
 
@@ -1480,12 +1426,6 @@
 
   async function startApp() {
     await loadMe();
-
-    // аккаунт есть, но код ещё не введён
-    if (me.role !== 'admin' && me.role !== 'manager') {
-      show('code');
-      return;
-    }
 
     await loadPrices();
 
@@ -1534,21 +1474,6 @@
       btn.disabled = false; btn.textContent = 'Зарегистрироваться';
     });
 
-    $('codeForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const btn = $('codeBtn'), msg = $('codeMsg');
-      btn.disabled = true; btn.textContent = 'Проверяю…';
-      msg.hidden = true;
-      try {
-        await redeemCode($('codeInput').value);
-        await startApp();
-      } catch (err) {
-        msg.hidden = false; msg.className = 'msg'; msg.textContent = err.message;
-      }
-      btn.disabled = false; btn.textContent = 'Открыть доступ';
-    });
-
-    $('codeLogout').addEventListener('click', logout);
     $('logoutBtn').addEventListener('click', logout);
 
     $('tabs').addEventListener('click', e => {
@@ -1608,19 +1533,6 @@
 
       if (e.target.closest('#bulkApply')) applyBulkMargin();
 
-      if (e.target.closest('#saveCodesBtn')) {
-        const btn = $('saveCodesBtn'), msg = $('codesMsg');
-        const a = $('codeAdmin').value.trim(), m = $('codeManager').value.trim();
-        if (!a || !m) {
-          msg.innerHTML = '<div class="msg">Коды не могут быть пустыми</div>';
-          return;
-        }
-        btn.disabled = true; btn.textContent = 'Сохраняю…';
-        Promise.all([saveCode('admin', a), saveCode('manager', m)])
-          .then(() => { msg.innerHTML = '<div class="msg ok">Коды сохранены. Старые больше не работают.</div>'; })
-          .catch(err => { msg.innerHTML = '<div class="msg">Не удалось: ' + err.message + '</div>'; })
-          .finally(() => { btn.disabled = false; btn.textContent = 'Сохранить коды'; });
-      }
       const qh = e.target.closest('.quote-head');
       if (qh) {
         const b = qh.parentElement.querySelector('.quote-body');
