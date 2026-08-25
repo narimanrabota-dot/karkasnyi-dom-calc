@@ -953,7 +953,11 @@
       money(P.portage_base) + ' + ' + money(P.portage_per_m) + '/м</span></span>' +
       '<label class="switch"><input type="checkbox" id="portage"><span class="track"></span></label></div>' +
       '<div class="opt-row" id="portageRow" hidden><span>Дистанция проноса, м</span>' +
-      '<input type="number" class="num" id="portageM" min="0" step="1" value="0"></div>');
+      '<input type="number" class="num" id="portageM" min="0" step="1" value="0"></div>' +
+      '<div class="opt-row"><span>Вентзазор снаружи стен <span class="price" id="ventWallsHint"></span></span>' +
+      '<label class="switch"><input type="checkbox" id="ventWalls"><span class="track"></span></label></div>' +
+      '<div class="opt-row"><span>Вентзазор снаружи по крыше <span class="price" id="ventRoofHint"></span></span>' +
+      '<label class="switch"><input type="checkbox" id="ventRoof"><span class="track"></span></label></div>');
 
     h += '<div class="opt-sum"><span>Доп-опции</span><b id="optSum">0 ₽</b></div>';
     $('options').innerHTML = h;
@@ -1019,7 +1023,9 @@
         roofType: pillVal('roof'),
         steps: $('steps').checked,
         portage: $('portage').checked,
-        portageM: $('portageM').value
+        portageM: $('portageM').value,
+        ventWalls: $('ventWalls') ? $('ventWalls').checked : false,
+        ventRoof: $('ventRoof') ? $('ventRoof').checked : false
       }));
     } catch (e) { /* нет места в хранилище — не критично */ }
   }
@@ -1061,6 +1067,8 @@
     $('steps').checked = !!s.steps;
     $('portage').checked = !!s.portage;
     set('portageM', s.portageM);
+    if ($('ventWalls')) $('ventWalls').checked = !!s.ventWalls;
+    if ($('ventRoof')) $('ventRoof').checked = !!s.ventRoof;
   }
 
   function readDims() {
@@ -1134,9 +1142,16 @@
     const portage = pick('#portage').checked;
     const portageM = parseFloat(pick('#portageM').value) || 0;
     const portageSum = portage ? P.portage_base + portageM * P.portage_per_m : 0;
+    const ventWalls = pick('#ventWalls') ? pick('#ventWalls').checked : false;
+    const ventRoof  = pick('#ventRoof')  ? pick('#ventRoof').checked  : false;
+    const ventWallsSum = ventWalls ? (P.vent_walls || 0) * (area || 0) : 0;
+    const ventRoofSum  = ventRoof  ? (P.vent_roof  || 0) * (area || 0) : 0;
+
     const miscParts = [];
     if (steps) miscParts.push('ступеньки');
     if (portage) miscParts.push('пронос ' + portageM + ' м');
+    if (ventWalls) miscParts.push('вентзазор стен');
+    if (ventRoof) miscParts.push('вентзазор крыши');
 
     const foundKey = pick('[data-pills="found"] button.on').dataset.val;
     const isPiles = foundKey === 'piles';
@@ -1174,7 +1189,7 @@
       found: { sum: foundSum, count: foundCount, text: foundText },
       roof:  { sum: roofSum, count: roofSum ? 1 : 0,
                text: ROOF_MATERIALS[roofMat].short + ', ' + roofKey + ' ската' },
-      misc:  { sum: stepsSum + portageSum, count: miscParts.length, text: miscParts.join(', ') }
+      misc:  { sum: stepsSum + portageSum + ventWallsSum + ventRoofSum, count: miscParts.length, text: miscParts.join(', ') }
     };
 
     return {
@@ -1186,7 +1201,7 @@
       foundKey, isPiles, pileSize, liveOporA, liveOporB, terrOporA, terrOporB, terrOpor,
       autoCount, foundCount, foundUnitPrice, foundBase, pileKmSum, foundSum,
       roofKey, roofMat, roofMatSum, roof2Sum, roofSum, groups,
-      total: paramSum + floorSum + outSum + winSum + doorSum + partSum + stepsSum + portageSum + foundSum + roofSum
+      total: paramSum + floorSum + outSum + winSum + doorSum + partSum + stepsSum + portageSum + ventWallsSum + ventRoofSum + foundSum + roofSum
     };
   }
 
@@ -1238,6 +1253,13 @@
     $('meshHint').textContent = P.floor_mesh
       ? money(P.floor_mesh) + '/м²' + (o.meshSum ? ' = ' + money(o.meshSum) : '')
       : 'цена не задана';
+    $('ventWallsHint').textContent = P.vent_walls
+      ? money(P.vent_walls) + '/м²' + (o.ventWallsSum ? ' = ' + money(o.ventWallsSum) : '')
+      : 'цена не задана';
+    $('ventRoofHint').textContent = P.vent_roof
+      ? money(P.vent_roof) + '/м²' + (o.ventRoofSum ? ' = ' + money(o.ventRoofSum) : '')
+      : 'цена не задана';
+
     $('outHint').textContent = P[o.outKey]
       ? money(P[o.outKey]) + ' за м² общей площади' + (o.outSum ? ' = ' + money(o.outSum) : '')
       : 'входит в базовую цену';
@@ -1340,6 +1362,8 @@
     if (o.roof2Sum) add('Двускатная крыша: ' + dims.totalArea.toFixed(1) + ' м² × ' +
       money(P['roof2_' + frame]), o.roof2Sum);
     if (o.steps) add('Ступеньки', o.stepsSum);
+    if (o.ventWallsSum) add('Вентзазор стен: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.vent_walls), o.ventWallsSum);
+    if (o.ventRoofSum) add('Вентзазор крыши: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.vent_roof), o.ventRoofSum);
     if (o.portage) add('Пронос материалов: ' + money(P.portage_base) + ' + ' + o.portageM +
       ' м × ' + money(P.portage_per_m), o.portageSum);
 
