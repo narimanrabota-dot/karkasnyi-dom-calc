@@ -37,14 +37,14 @@
 
     .shell {
       width: 100%;
-      max-width: 460px;
+      max-width: 560px;
       background: #fff;
       border-radius: 18px;
       padding: 24px 22px;
       box-shadow: 0 30px 64px rgba(18, 42, 32, .40), 0 4px 10px rgba(18, 42, 32, .20);
     }
 
-    .shell.wide { max-width: 980px; }
+    
 
     [hidden] { display: none !important; }
 
@@ -306,11 +306,23 @@
     }
     .ptable { overflow-x: auto; }
 
+    .toast {
+      position: fixed; left: 50%; bottom: 24px;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--ink); color: #fff;
+      font-size: 13.5px; padding: 11px 18px; border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(18, 42, 32, .35);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      z-index: 100; max-width: 90vw; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
     .prow, .phead {
       display: grid;
-      grid-template-columns: minmax(210px, 1fr) 104px 74px 104px;
-      gap: 2px; align-items: center;
-      min-width: 520px;
+      grid-template-columns: minmax(150px, 1fr) 96px 68px 96px;
+      gap: 8px; align-items: center;
+      min-width: 460px;
     }
 
     .phead {
@@ -360,7 +372,7 @@
       display: flex; align-items: center; gap: 10px;
       font-size: 10px; font-weight: 600;
       text-transform: uppercase; letter-spacing: 1px;
-      color: #a9b3ad; margin: 26px 0 2px; min-width: 520px;
+      color: #a9b3ad; margin: 26px 0 2px; min-width: 460px;
     }
     .addbtn {
       border: 1px dashed var(--line); background: transparent; color: var(--green);
@@ -759,7 +771,7 @@
   const FINISH_NAMES = { hozblok: 'Хозблок', orgalit: 'ДВП (оргалит)', osb: 'ОСБ', vagonka: 'Вагонка' };
 
   const GROUP_COLORS = {
-    win: '#4f8fc0', door: '#b8763f', part: '#9a7bb5',
+    param: '#3f8f8f', win: '#4f8fc0', door: '#b8763f', part: '#9a7bb5',
     found: '#4f8f6b', roof: '#c9a227', misc: '#8c8f92'
   };
 
@@ -845,6 +857,20 @@
 
   function renderOptions() {
     let h = '<div class="options-title">Дополнительно</div>';
+
+    h += accGroup('param', 'Параметры дома',
+      '<div class="opt-row"><span>Высота стен</span><span class="pills" data-pills="wall">' +
+      '<button data-val="22" class="on">2,2 м</button>' +
+      '<button data-val="25">2,5 м</button></span></div>' +
+      '<div class="opt-row"><span class="price" id="wallHint"></span></div>' +
+      '<div class="opt-row"><span>Высота конька</span><span class="pills" data-pills="ridge">' +
+      '<button data-val="80" class="on">80 см</button>' +
+      '<button data-val="120">120 см</button></span></div>' +
+      '<div class="opt-row"><span class="price" id="ridgeHint"></span></div>' +
+      '<div class="opt-row"><span>Потолок</span><span class="pills" data-pills="ceil">' +
+      '<button data-val="flat" class="on">Ровный</button>' +
+      '<button data-val="ridge">Под конёк</button></span></div>' +
+      '<div class="opt-row"><span class="price">Тип потолка на цену не влияет</span></div>');
 
     h += accGroup('win', 'Окна', groupedRows('win', WINDOWS));
     h += accGroup('door', 'Двери', groupedRows('door', DOORS));
@@ -1023,6 +1049,20 @@
       doorCount += n; doorSum += n * P[d.id]; doorParts.push(d.short + ' ×' + n);
     });
 
+    // параметры дома: высота стен и конька — доплата за м² общей площади
+    const wallKey = pick('[data-pills="wall"] button.on').dataset.val;
+    const ridgeKey = pick('[data-pills="ridge"] button.on').dataset.val;
+    const ceilKey = pick('[data-pills="ceil"] button.on').dataset.val;
+
+    const wallSum = wallKey === '25' ? P.wall_25 * (area || 0) : 0;
+    const ridgeSum = ridgeKey === '120' ? P.ridge_120 * (area || 0) : 0;
+    const paramSum = wallSum + ridgeSum;
+
+    const paramParts = [];
+    paramParts.push(wallKey === '25' ? 'стены 2,5 м' : 'стены 2,2 м');
+    paramParts.push(ridgeKey === '120' ? 'конёк 120 см' : 'конёк 80 см');
+    paramParts.push(ceilKey === 'ridge' ? 'потолок под конёк' : 'потолок ровный');
+
     const partKey = pick('[data-pills="part"] button.on').dataset.val;
     const partLen = cnt(pick('[data-kind="part"]'));
     const partSum = partLen * P[partKey];
@@ -1061,6 +1101,8 @@
     const roofSum = roofMatSum + roof2Sum;
 
     const groups = {
+      param: { sum: paramSum, count: (wallKey === '25' ? 1 : 0) + (ridgeKey === '120' ? 1 : 0),
+               text: paramParts.join(', ') },
       win:   { sum: winSum, count: winCount, text: winParts.join(', ') },
       door:  { sum: doorSum, count: doorCount, text: doorParts.join(', ') },
       part:  { sum: partSum, count: partLen, text: partLen ? PARTITIONS[partKey] + ' ' + partLen + ' м' : '' },
@@ -1071,12 +1113,13 @@
     };
 
     return {
+      wallKey, ridgeKey, ceilKey, wallSum, ridgeSum, paramSum,
       winCount, winSum, doorCount, doorSum, partKey, partLen, partSum,
       steps, stepsSum, portage, portageM, portageSum,
       foundKey, isPiles, pileSize, liveOporA, liveOporB, terrOporA, terrOporB, terrOpor,
       autoCount, foundCount, foundUnitPrice, foundBase, pileKmSum, foundSum,
       roofKey, roofMat, roofMatSum, roof2Sum, roofSum, groups,
-      total: winSum + doorSum + partSum + stepsSum + portageSum + foundSum + roofSum
+      total: paramSum + winSum + doorSum + partSum + stepsSum + portageSum + foundSum + roofSum
     };
   }
 
@@ -1113,6 +1156,11 @@
       v.classList.toggle('zero', v.textContent.trim() === '0'));
 
     $('partPrice').textContent = money(P[o.partKey]) + '/м';
+
+    $('wallHint').textContent = '2,2 м в базе · 2,5 м — ' + money(P.wall_25) +
+      ' за м² общей площади' + (o.wallSum ? ' = ' + money(o.wallSum) : '');
+    $('ridgeHint').textContent = '80 см в базе · 120 см — ' + money(P.ridge_120) +
+      ' за м² общей площади' + (o.ridgeSum ? ' = ' + money(o.ridgeSum) : '');
     $('portageRow').hidden = !o.portage;
     $('pileSizeRow').hidden = !o.isPiles;
     $('roof2Rate').textContent = '2 ската — ' + money(P['roof2_' + frame]) +
@@ -1187,6 +1235,8 @@
     if (terrSum) add('Терраса: ' + dims.terrArea.toFixed(1) + ' м² × ' + money(terrPrice), terrSum);
     add('Доставка: ' + units + ' × ' + money(onePer), deliveryTotal);
     add('Сборка: ' + units + ' × ' + money(oneAsm), assemblyTotal);
+    if (o.wallSum) add('Стены 2,5 м: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.wall_25), o.wallSum);
+    if (o.ridgeSum) add('Конёк 120 см: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.ridge_120), o.ridgeSum);
     if (o.winCount) add('Окна: ' + o.winCount + ' шт', o.winSum);
     if (o.doorCount) add('Двери: ' + o.doorCount + ' шт', o.doorSum);
     if (o.partLen) add('Перегородки ' + PARTITIONS[o.partKey] + ': ' + o.partLen + ' м × ' + money(P[o.partKey]), o.partSum);
@@ -1323,7 +1373,7 @@
       '</div>';
 
     html += '<div class="ptable"><div class="phead">' +
-      '<span>Наименование</span><span>Себестоимость</span>' +
+      '<span>Наименование</span><span>Себест.</span>' +
       '<span>Маржа&nbsp;%</span><span>Розница</span></div>';
 
     let lastGrp = '';
@@ -1673,7 +1723,7 @@
     $('tab-history').hidden = name !== 'history';
     $('tab-prices').hidden = name !== 'prices';
     $('tab-people').hidden = name !== 'people';
-    $('appScreen').classList.toggle('wide', name === 'prices' || name === 'people');
+    // ширина карточки одинаковая на всех вкладках
     if (name === 'history') loadHistory();
     if (name === 'prices') renderPrices();
     if (name === 'people') loadPeople();
@@ -1683,19 +1733,51 @@
   // Прайс мог поменяться, пока менеджер сидел в приложении.
   // Подтягиваем свежий, если прошло больше минуты.
   let pricesLoadedAt = 0;
+  let priceCheckBusy = false;   // чтобы проверки не наезжали друг на друга
 
   async function refreshPricesIfStale(force) {
     if (!me || (me.role !== 'admin' && me.role !== 'manager')) return;
-    if (!force && Date.now() - pricesLoadedAt < 60000) return;
+    if (priceCheckBusy) return;
+    if (!force && Date.now() - pricesLoadedAt < 10000) return;
+
+    priceCheckBusy = true;
     try {
       const before = JSON.stringify(P);
       await loadPrices();
+
+      // перерисовываем только если цены реально изменились
       if (JSON.stringify(P) !== before) {
+        const active = document.activeElement;
+        const keepId = active && active.id ? active.id : null;
+
         renderOptions();
         restoreForm();   // цены перестроили опции — возвращаем набранный расчёт
         refreshAll();
+
+        if (keepId && $(keepId)) $(keepId).focus();
+        if (!isAdmin()) toast('Цены обновлены руководителем — расчёт пересчитан');
       }
-    } catch (e) { /* нет связи — считаем по тому, что есть */ }
+    } catch (e) {
+      // нет связи — молча продолжаем считать по последним известным ценам
+    } finally {
+      priceCheckBusy = false;
+    }
+  }
+
+  // короткое уведомление внизу экрана
+  let toastTimer = null;
+  function toast(text) {
+    let el = $('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 4000);
   }
 
   async function startApp() {
@@ -1869,10 +1951,15 @@
       if ($('pricesList').querySelector('input.dirty')) scheduleSave();
     });
 
-    // вернулся во вкладку — проверяем, не поменялись ли цены
+    // вернулся во вкладку — проверяем немедленно, вне очереди
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) refreshPricesIfStale();
+      if (!document.hidden) refreshPricesIfStale(true);
     });
+
+    // пока вкладка открыта — тихая проверка цен каждые 12 секунд
+    setInterval(() => {
+      if (document.visibilityState === 'visible') refreshPricesIfStale(true);
+    }, 12000);
 
     // восстановление сессии
     if (loadSession()) {
