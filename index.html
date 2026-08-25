@@ -1207,18 +1207,21 @@
     const roofSum = roofMatSum + roof2Sum;
 
     const groups = {
-      floor: { sum: floorSum, count: (floorLiveSum ? 1 : 0) + (floorTerrSum ? 1 : 0) + (meshSum ? 1 : 0),
+      // счётчик показывает, сколько позиций выбрано, а не сколько они стоят:
+      // цена может быть ещё не задана, но выбор менеджер уже сделал
+      floor: { sum: floorSum, count: (floorLiveKey ? 1 : 0) +
+                      ((floorTerrKey && dims.terrArea) ? 1 : 0) + (mesh ? 1 : 0),
                text: floorParts.join(', ') },
-      finish:{ sum: outSum, count: outSum ? 1 : 0,
+      finish:{ sum: outSum, count: (outKey ? 1 : 0) + (finishSel ? 1 : 0),
                text: (outKey ? 'снаружи ' + labelOf(outKey) : '') +
                      (finishSel ? ', внутри ' + FINISH_NAMES[finishSel].toLowerCase() : '') },
-      param: { sum: paramSum, count: (wallKey === '25' ? 1 : 0) + (ridgeKey === '120' ? 1 : 0),
+      param: { sum: paramSum, count: (wallKey ? 1 : 0) + (ridgeKey ? 1 : 0) + (ceilKey ? 1 : 0),
                text: paramParts.join(', ') },
       win:   { sum: winSum, count: winCount, text: winParts.join(', ') },
       door:  { sum: doorSum, count: doorCount, text: doorParts.join(', ') },
       part:  { sum: partSum, count: partLen, text: partLen ? PARTITIONS[partKey] + ' ' + partLen + ' м' : '' },
       found: { sum: foundSum, count: foundCount, text: foundText },
-      roof:  { sum: roofSum, count: roofSum ? 1 : 0,
+      roof:  { sum: roofSum, count: (roofMat ? 1 : 0) + (roofKey ? 1 : 0),
                text: ROOF_MATERIALS[roofMat].short + ', ' + roofKey + ' ската' },
       misc:  { sum: stepsSum + portageSum + ventWallsSum + ventRoofSum, count: miscParts.length, text: miscParts.join(', ') }
     };
