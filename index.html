@@ -781,7 +781,21 @@
   };
 
   const FRAME_NAMES = { '50x50': '50 × 50 мм', '40x100': '40 × 100 мм', '40x150': '40 × 150 мм' };
-  const FINISH_NAMES = { hozblok: 'Хозблок', orgalit: 'ДВП (оргалит)', osb: 'ОСБ', vagonka: 'Вагонка' };
+  const FINISH_NAMES = {
+    hozblok: 'Хозблок', orgalit: 'ДВП (оргалит)', osb: 'ОСБ',
+    vagonka: 'Вагонка класса С', vagonka_ab: 'Вагонка класса АБ',
+    imit_c: 'Имитация бруса класса С', imit_ab: 'Имитация бруса класса АБ'
+  };
+  // вагонка АБ и имитация считаются доплатой поверх вагонки класса С:
+  // базовая цена за м² берётся по вагонке, сверху — своя надбавка
+  const FINISH_BASE = {
+    hozblok: 'hozblok', orgalit: 'orgalit', osb: 'osb',
+    vagonka: 'vagonka', vagonka_ab: 'vagonka', imit_c: 'vagonka', imit_ab: 'vagonka'
+  };
+  const FINISH_EXTRA = {
+    vagonka_ab: 'in_vagonka_ab', imit_c: 'in_imit_c', imit_ab: 'in_imit_ab'
+  };
+  const baseFinish = f => FINISH_BASE[f] || 'hozblok';
 
   const GROUP_COLORS = {
     floor: '#6f8f4f', finish: '#c07a8f', win: '#4f8fc0', door: '#b8763f',
@@ -910,10 +924,10 @@
       '<div class="opt-row"><span class="price" id="outHint"></span></div>' +
       '<div class="opt-row"><span>Внутри жилой части</span>' +
       '<select class="mini" id="finish">' +
-      '<option value="hozblok">Хозблок</option>' +
-      '<option value="orgalit">ДВП (оргалит)</option>' +
-      '<option value="osb">ОСБ</option>' +
-      '<option value="vagonka">Вагонка</option>' +
+      Object.keys(FINISH_NAMES).map(k =>
+        '<option value="' + k + '">' + FINISH_NAMES[k] +
+        (FINISH_EXTRA[k] && P[FINISH_EXTRA[k]] ? ' — ' + P[FINISH_EXTRA[k]] + ' ₽/м²' : '') +
+        '</option>').join('') +
       '</select></div>' +
       '<div class="opt-row"><span class="price" id="inHint"></span></div>');
 
@@ -1157,6 +1171,8 @@
     if (mesh) floorParts.push('сетка от грызунов');
 
     const finishSel = pick('#finish') ? pick('#finish').value : null;
+    const inExtraKey = finishSel ? FINISH_EXTRA[finishSel] : null;
+    const inExtraSum = inExtraKey ? (P[inExtraKey] || 0) * dims.liveArea : 0;
 
     // наружная отделка стен — по общей площади
     const outKey = pick('#outFinish') ? pick('#outFinish').value : null;
@@ -1212,7 +1228,7 @@
       floor: { sum: floorSum, count: (floorLiveKey ? 1 : 0) +
                       ((floorTerrKey && dims.terrArea) ? 1 : 0) + (mesh ? 1 : 0),
                text: floorParts.join(', ') },
-      finish:{ sum: outSum, count: (outKey ? 1 : 0) + (finishSel ? 1 : 0),
+      finish:{ sum: outSum + inExtraSum, count: (outKey ? 1 : 0) + (finishSel ? 1 : 0),
                text: (outKey ? 'снаружи ' + labelOf(outKey) : '') +
                      (finishSel ? ', внутри ' + FINISH_NAMES[finishSel].toLowerCase() : '') },
       param: { sum: paramSum, count: (wallKey ? 1 : 0) + (ridgeKey ? 1 : 0) + (ceilKey ? 1 : 0),
@@ -1229,13 +1245,13 @@
     return {
       wallKey, ridgeKey, ceilKey, wallSum, ridgeSum, paramSum,
       floorLiveKey, floorTerrKey, floorLiveSum, floorTerrSum, mesh, meshSum, floorSum,
-      outKey, outSum, finishSel,
+      outKey, outSum, finishSel, inExtraKey, inExtraSum,
       winCount, winSum, doorCount, doorSum, partKey, partLen, partSum,
       steps, stepsSum, portage, portageM, portageSum,
       foundKey, isPiles, pileSize, liveOporA, liveOporB, terrOporA, terrOporB, terrOpor,
       autoCount, foundCount, foundUnitPrice, foundBase, pileKmSum, foundSum,
       roofKey, roofMat, roofMatSum, roof2Sum, roofSum, groups,
-      total: paramSum + floorSum + outSum + winSum + doorSum + partSum + stepsSum + portageSum + ventWallsSum + ventRoofSum + foundSum + roofSum
+      total: paramSum + floorSum + outSum + inExtraSum + winSum + doorSum + partSum + stepsSum + portageSum + ventWallsSum + ventRoofSum + foundSum + roofSum
     };
   }
 
@@ -1294,7 +1310,7 @@
       ? money(P.vent_roof) + '/м²' + (o.ventRoofSum ? ' = ' + money(o.ventRoofSum) : '')
       : 'цена не задана';
 
-    const inKey = 'm2_' + $('frame').value + '_' + (o.finishSel || 'hozblok');
+    const inKey = 'm2_' + $('frame').value + '_' + baseFinish(o.finishSel);
     if ($('inHint')) $('inHint').textContent = P[inKey]
       ? money(P[inKey]) + ' за м² жилой площади — уже в стоимости домика'
       : 'входит в стоимость домика';
@@ -1362,7 +1378,7 @@
     if (dims.hasTerrace && !dims.terrArea) return err('Укажите обе стороны террасы');
     if (isNaN(km) || km < 0) return err('Укажите дистанцию доставки в км');
 
-    const livePrice = P['m2_' + frame + '_' + finish];
+    const livePrice = P['m2_' + frame + '_' + baseFinish(finish)];
     const liveSum = dims.liveArea * livePrice;
     const terrPrice = P['m2_' + frame + '_hozblok'];
     const terrSum = dims.terrArea * terrPrice;
@@ -1388,6 +1404,8 @@
     if (o.meshSum) add('Сетка от грызунов: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.floor_mesh), o.meshSum);
     if (o.outSum) add('Наружная отделка ' + labelOf(o.outKey) + ': ' + dims.totalArea.toFixed(1) +
       ' м² × ' + money(P[o.outKey]), o.outSum);
+    if (o.inExtraSum) add('Внутренняя отделка ' + labelOf(o.inExtraKey) + ': ' + dims.liveArea.toFixed(1) +
+      ' м² × ' + money(P[o.inExtraKey]), o.inExtraSum);
     if (o.wallSum) add('Стены 2,5 м: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.wall_25), o.wallSum);
     if (o.ridgeSum) add('Конёк 120 см: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.ridge_120), o.ridgeSum);
     if (o.winCount) add('Окна: ' + o.winCount + ' шт', o.winSum);
