@@ -299,28 +299,24 @@
 
     .prow, .phead {
       display: grid;
-      grid-template-columns: minmax(190px, 1fr) 110px 76px 84px 110px 130px;
-      gap: 8px; align-items: center;
-      min-width: 700px;
+      grid-template-columns: minmax(200px, 1fr) 110px 86px 110px;
+      gap: 10px; align-items: center;
+      min-width: 560px;
     }
     .prow { padding: 5px 0; border-bottom: 1px solid var(--line); }
 
     .prow .lbl { font-size: 13.5px; }
-    .prow .lbl small { display: block; color: var(--ink-soft); font-size: 11px; }
+    .prow .lbl small { display: block; color: var(--ink-soft); font-size: 11px; margin-top: 1px; }
 
     .prow input {
       height: 36px; padding: 0 9px; font-size: 13px; text-align: right;
       background: var(--field); border: 1px solid var(--line); border-radius: 8px;
       font-family: inherit; color: inherit; outline: none; width: 100%;
     }
-    .prow input.unit { text-align: center; font-size: 12px; color: var(--ink-soft); }
     .prow input:focus { border-color: var(--green); background: #fff; }
     .prow input.dirty { border-color: var(--green); background: #eef4f0; font-weight: 600; }
 
-    .prow .profit {
-      font-size: 12.5px; font-weight: 600; color: var(--green); text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
+    .prow .profit { color: var(--green); font-weight: 600; }
     .prow .profit.neg { color: var(--warn-ink); }
 
     .phead {
@@ -333,7 +329,7 @@
     .pgrp-row {
       display: flex; align-items: center; gap: 10px;
       font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
-      color: var(--ink-soft); margin: 16px 0 4px; min-width: 700px;
+      color: var(--ink-soft); margin: 16px 0 4px; min-width: 560px;
     }
     .addbtn {
       border: 1px dashed var(--line); background: transparent; color: var(--green);
@@ -1196,8 +1192,8 @@
       '</div>';
 
     html += '<div class="ptable"><div class="phead">' +
-      '<span>Наименование</span><span>Себестоимость</span><span>Единица</span>' +
-      '<span>Маржа&nbsp;%</span><span>Розница</span><span>Прибыль</span></div>';
+      '<span>Наименование</span><span>Себестоимость</span>' +
+      '<span>Маржа&nbsp;%</span><span>Розница</span></div>';
 
     let lastGrp = '';
     PRICE_ROWS.forEach(r => {
@@ -1220,12 +1216,11 @@
 
   function priceRowHtml(r, cost) {
     return '<div class="prow" data-key="' + r.key + '">' +
-      '<span class="lbl">' + r.label + (r.sub ? '<small>' + r.sub + '</small>' : '') + '</span>' +
+      '<span class="lbl">' + r.label +
+        '<small>' + (r.unit || '') + '<span class="profit" data-f="profit"></span></small></span>' +
       '<input type="number" step="1" data-f="cost" value="' + cost + '">' +
-      '<input type="text" data-f="unit" value="' + (r.unit || '') + '" class="unit">' +
       '<input type="number" step="0.1" data-f="margin" value="' + Number(r.margin) + '">' +
       '<input type="number" step="1" data-f="sale" value="' + Number(r.sale) + '">' +
-      '<span class="profit" data-f="profit">—</span>' +
       '</div>';
   }
 
@@ -1253,10 +1248,8 @@
 
     const sale = Number(sEl.value) || 0;
     const profit = sale - cost;
-    // фактическая маржа: после округления розницы она может слегка отличаться от заданной
-    const fact = sale > 0 ? Math.round(profit / sale * 1000) / 10 : 0;
     const pEl = row.querySelector('[data-f="profit"]');
-    pEl.textContent = profit ? money(profit) + '  ·  маржа ' + fact + '%' : '—';
+    pEl.textContent = profit ? ' · прибыль ' + money(profit) : '';
     pEl.classList.toggle('neg', profit < 0);
   }
 
@@ -1288,8 +1281,7 @@
       if (!cost) return;                       // нечего наценивать
 
       // пропускаем не-денежные параметры: «Порог бесплатных км» и т.п.
-      const unit = row.querySelector('[data-f="unit"]').value;
-      if (unit.indexOf('₽') === -1) return;
+      if ((src.unit || '').indexOf('₽') === -1) return;
 
       row.querySelector('[data-f="margin"]').value = m;
       recalcRow(key);
@@ -1387,12 +1379,11 @@
       const sale = Number(row.querySelector('[data-f="sale"]').value);
       const cost = Number(row.querySelector('[data-f="cost"]').value);
       const margin = Number(row.querySelector('[data-f="margin"]').value);
-      const unit = row.querySelector('[data-f="unit"]').value.trim();
 
-      if (Number(src.sale) !== sale || Number(src.margin) !== margin || (src.unit || '') !== unit) {
+      if (Number(src.sale) !== sale || Number(src.margin) !== margin) {
         priceUpd.push({
           key: key, grp: src.grp, sub: src.sub, label: src.label, short: src.short,
-          sale: sale, margin: margin, unit: unit, sort: src.sort
+          sale: sale, margin: margin, unit: src.unit, sort: src.sort
         });
       }
       if ((COSTS[key] || 0) !== cost) costUpd.push({ key: key, cost: cost });
@@ -1725,14 +1716,12 @@
       const orig = {
         cost: COSTS[key] || 0,
         sale: Number(src.sale),
-        margin: Number(src.margin),
-        unit: src.unit || ''
+        margin: Number(src.margin)
       };
       row.querySelectorAll('input[data-f]').forEach(el => {
         const k = el.dataset.f;
         if (orig[k] === undefined) return;
-        const now = k === 'unit' ? el.value.trim() : Number(el.value);
-        el.classList.toggle('dirty', now !== orig[k]);
+        el.classList.toggle('dirty', Number(el.value) !== orig[k]);
       });
 
       const btn = $('savePricesBtn');
