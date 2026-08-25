@@ -1132,10 +1132,10 @@
     const floorTerrKey = pick('#floorTerr') ? pick('#floorTerr').value : null;
     const floorLiveSum = floorLiveKey ? (P[floorLiveKey] || 0) * dims.liveArea : 0;
     const floorTerrSum = (floorTerrKey && dims.terrArea) ? (P[floorTerrKey] || 0) * dims.terrArea : 0;
-    const floorSum = floorLiveSum + floorTerrSum + meshSum;
-
     const mesh = pick('#floorMesh') ? pick('#floorMesh').checked : false;
     const meshSum = mesh ? (P.floor_mesh || 0) * (area || 0) : 0;
+
+    const floorSum = floorLiveSum + floorTerrSum + meshSum;
 
     const floorParts = [];
     if (floorLiveKey) floorParts.push(labelOf(floorLiveKey));
