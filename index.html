@@ -193,6 +193,15 @@
     .price { color: var(--ink-soft); font-size: 12px; margin-left: 5px; }
     .calc-out { font-weight: 600; color: var(--green); font-size: 14px; }
 
+    /* количество опор: формула и результат крупно, рядом кнопка правки */
+    .found-val { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+    .found-num {
+      font-weight: 700; color: var(--green); font-size: 15px;
+      font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+    .found-val .num { width: 80px; }
+    .found-val .addbtn { height: 28px; font-size: 11px; padding: 0 10px; }
+
     .stepper { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
     .stepper button {
       width: 30px; height: 30px; border: 1px solid var(--line); background: var(--field);
@@ -855,10 +864,11 @@
         '<option value="' + k + '">' + PILE_SIZES[k] + ' — ' + P[k] + ' ₽</option>').join('') +
       '</select></div>' +
       '<div class="opt-row"><span id="foundLabel">Опоры</span>' +
-      '<input type="number" class="num" id="foundCount" min="0" step="1"></div>' +
-      '<div class="opt-row" style="padding-top:2px">' +
-      '<span class="price" id="foundField">—</span>' +
-      '<button class="addbtn" id="foundAuto" hidden>вернуть расчёт</button></div>' +
+      '<span class="found-val">' +
+      '<span class="found-num" id="foundField">—</span>' +
+      '<input type="number" class="num" id="foundCount" min="0" step="1" hidden>' +
+      '<button class="addbtn" id="foundEdit">изменить</button>' +
+      '</span></div>' +
       '<div class="opt-warn" id="foundWarn" hidden></div>');
 
     h += accGroup('roof', 'Кровля',
@@ -983,6 +993,7 @@
 
   // null — количество опор считается автоматически, число — задано вручную
   let foundManual = null;
+  let foundEditing = false;
 
   function refreshAll() {
     const dims = readDims();
@@ -1023,26 +1034,32 @@
     fw.hidden = o.foundCount > 0;
     if (!o.foundCount) fw.textContent = 'Укажите размеры дома в самом верху — количество опор считается от сторон';
 
-    // поле количества: подставляем расчёт, пока менеджер не вписал своё
-    const fc = $('foundCount');
-    if (fc && document.activeElement !== fc) {
-      fc.value = o.foundCount || '';
-    }
+    // формула и результат: «4 × 5 = 20 свай», с террасой «4×5 + 3×2 = 26 свай»
+    const word = o.isPiles
+      ? plural(o.foundCount, 'свая', 'сваи', 'свай')
+      : plural(o.foundCount, 'блок', 'блока', 'блоков');
 
-    // подпись: откуда взялось число
     const formula = o.terrOpor
-      ? o.liveOporA + '×' + o.liveOporB + ' + ' + o.terrOporA + '×' + o.terrOporB + ' = ' + o.autoCount
-      : o.liveOporA + '×' + o.liveOporB + ' = ' + o.autoCount;
+      ? o.liveOporA + ' × ' + o.liveOporB + ' + ' + o.terrOporA + ' × ' + o.terrOporB
+      : o.liveOporA + ' × ' + o.liveOporB;
 
     const ff = $('foundField');
-    if (foundManual !== null) {
-      ff.textContent = 'задано вручную, по расчёту было бы ' + (o.autoCount || 0) + ' шт';
-    } else if (!o.autoCount) {
-      ff.textContent = '—';
+    const fc = $('foundCount');
+    const fe = $('foundEdit');
+
+    if (foundEditing) {
+      ff.hidden = true;
+      fc.hidden = false;
+      if (document.activeElement !== fc) fc.value = o.foundCount || '';
+      fe.textContent = 'вернуть расчёт';
     } else {
-      ff.textContent = 'по сторонам дома: ' + formula + ' шт';
+      ff.hidden = false;
+      fc.hidden = true;
+      fe.textContent = 'изменить';
+      ff.textContent = o.autoCount
+        ? formula + ' = ' + o.autoCount + ' ' + word
+        : '—';
     }
-    $('foundAuto').hidden = foundManual === null;
 
     if (lastQuote) calculate();
   }
@@ -1704,7 +1721,12 @@
 
       if (e.target.closest('#bulkApply')) applyBulkMargin();
 
-      if (e.target.closest('#foundAuto')) { foundManual = null; refreshAll(); }
+      if (e.target.closest('#foundEdit')) {
+        if (foundEditing) { foundEditing = false; foundManual = null; }
+        else { foundEditing = true; }
+        refreshAll();
+        if (foundEditing) $('foundCount').focus();
+      }
 
       const pwdBtn = e.target.closest('[data-pwd]');
       if (pwdBtn) setUserPassword(pwdBtn.dataset.pwd);
