@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Калькулятор каркасного дома</title>
+  <title>Дачный садовый домик — калькулятор</title>
 
   <style>
     :root {
@@ -435,7 +435,7 @@
   <!-- ============ ЭКРАН ВХОДА И РЕГИСТРАЦИИ ============ -->
   <div class="shell" id="loginScreen" hidden>
     <div class="login-head">
-      <h1>Каркасный дом</h1>
+      <h1>Дачный садовый домик</h1>
       <p class="subtitle" id="authSubtitle">Калькулятор сметы. Войдите, чтобы продолжить.</p>
     </div>
 
@@ -483,7 +483,7 @@
 
     <div class="topbar">
       <div>
-        <h1 style="font-size:19px">Каркасный дом</h1>
+        <h1 style="font-size:19px">Дачный садовый домик</h1>
         <span class="role-chip" id="roleChip">менеджер</span>
       </div>
       <div class="who">
@@ -522,7 +522,7 @@
           <span class="mul">×</span>
           <input type="number" id="terrB" min="0" step="0.1" placeholder="2">
         </div>
-        <p class="hint">Терраса считается по цене «Хозблок», каркас у неё тот же, что у дома.</p>
+        <p class="hint">Терраса считается по цене «Хозблок», каркас у неё тот же, что у домика.</p>
       </div>
 
       <div class="area-summary" id="areaSummary"><span>Укажите размеры</span><b>—</b></div>
@@ -947,7 +947,7 @@
       '</span></div>' +
       '<div class="opt-warn" id="foundWarn" hidden></div>');
 
-    h += accGroup('param', 'Параметры дома',
+    h += accGroup('param', 'Параметры домика',
       '<div class="opt-row"><span>Высота стен</span><span class="pills" data-pills="wall">' +
       '<button data-val="22" class="on">2,2 м</button>' +
       '<button data-val="25">2,5 м</button></span></div>' +
@@ -1198,7 +1198,7 @@
     const foundSum = foundBase + pileKmSum;
     const foundText = foundCount
       ? (isPiles ? 'сваи ' + PILE_SIZES[pileSize] : 'бетонные блоки') + ' ×' + foundCount
-      : 'нужны размеры дома';
+      : 'нужны размеры домика';
 
     const roofKey = pick('[data-pills="roof"] button.on').dataset.val;
     const roofMat = pick('#roofMat').value;
@@ -1293,8 +1293,8 @@
 
     const inKey = 'm2_' + $('frame').value + '_' + (o.finishSel || 'hozblok');
     if ($('inHint')) $('inHint').textContent = P[inKey]
-      ? money(P[inKey]) + ' за м² жилой площади — уже в стоимости дома'
-      : 'входит в стоимость дома';
+      ? money(P[inKey]) + ' за м² жилой площади — уже в стоимости домика'
+      : 'входит в стоимость домика';
 
     $('outHint').textContent = P[o.outKey]
       ? money(P[o.outKey]) + ' за м² общей площади' + (o.outSum ? ' = ' + money(o.outSum) : '')
@@ -1314,7 +1314,7 @@
 
     const fw = $('foundWarn');
     fw.hidden = o.foundCount > 0;
-    if (!o.foundCount) fw.textContent = 'Укажите размеры дома в самом верху — количество опор считается от сторон';
+    if (!o.foundCount) fw.textContent = 'Укажите размеры домика в самом верху — количество опор считается от сторон';
 
     // формула и результат: «4 × 5 = 20 свай», с террасой «4×5 + 3×2 = 26 свай»
     const word = o.isPiles
@@ -1403,7 +1403,7 @@
     if (o.portage) add('Пронос материалов: ' + money(P.portage_base) + ' + ' + o.portageM +
       ' м × ' + money(P.portage_per_m), o.portageSum);
 
-    const note = 'Дом ' + dims.liveA + '×' + dims.liveB + ' м' +
+    const note = 'Домик ' + dims.liveA + '×' + dims.liveB + ' м' +
       (dims.terrArea ? ' + терраса ' + dims.terrA + '×' + dims.terrB + ' м' : '') +
       ', всего ' + dims.totalArea.toFixed(1) + ' м²<br>' +
       'Каркас ' + FRAME_NAMES[frame] + ', отделка: ' + FINISH_NAMES[finish] + '<br>' +
