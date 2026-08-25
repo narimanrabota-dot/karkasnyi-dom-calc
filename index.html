@@ -1230,9 +1230,10 @@
 
     const sale = Number(sEl.value) || 0;
     const profit = sale - cost;
-    const nacenka = cost > 0 ? Math.round(profit / cost * 1000) / 10 : 0;
+    // фактическая маржа: после округления розницы она может слегка отличаться от заданной
+    const fact = sale > 0 ? Math.round(profit / sale * 1000) / 10 : 0;
     const pEl = row.querySelector('[data-f="profit"]');
-    pEl.textContent = profit ? money(profit) + '  ·  наценка ' + nacenka + '%' : '—';
+    pEl.textContent = profit ? money(profit) + '  ·  маржа ' + fact + '%' : '—';
     pEl.classList.toggle('neg', profit < 0);
   }
 
