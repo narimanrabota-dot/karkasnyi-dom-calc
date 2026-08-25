@@ -357,6 +357,24 @@
     .bulk .addbtn { height: 38px; font-size: 13px; padding: 0 14px; }
     .bulk .bulk-hint { font-size: 12px; color: var(--ink-soft); flex: 1 1 100%; }
 
+    /* ---------- список людей ---------- */
+    .person {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      border: 1px solid var(--line); border-radius: 12px;
+      padding: 12px 14px; margin-bottom: 8px;
+    }
+    .person-main { flex: 1 1 200px; min-width: 0; }
+    .person-name { font-weight: 600; font-size: 15px; margin-right: 8px; }
+    .person-you {
+      font-size: 11px; color: var(--ink-soft); background: var(--field);
+      padding: 2px 7px; border-radius: 99px; margin-left: 6px;
+    }
+    .person-sub { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+    .person-acts { display: flex; gap: 6px; flex: 0 0 auto; }
+    .person-acts .addbtn { height: 32px; font-size: 12px; padding: 0 12px; }
+    .addbtn.danger { color: var(--warn-ink); }
+    .addbtn.danger:hover { border-color: var(--warn-ink); background: var(--warn-bg); }
+
     .sticky-save {
       position: sticky; bottom: 0; background: #fff;
       padding: 12px 0 0; border-top: 1px solid var(--line); margin-top: 14px;
@@ -432,6 +450,7 @@
       <button data-tab="calc" class="on">Расчёт</button>
       <button data-tab="history">История</button>
       <button data-tab="prices" id="tabPrices" hidden>Ценообразование</button>
+      <button data-tab="people" id="tabPeople" hidden>Люди</button>
     </div>
 
     <!-- ---- вкладка: расчёт ---- -->
@@ -507,6 +526,15 @@
       </p>
       <div class="msg ok" id="pricesMsg" hidden></div>
       <div id="pricesList"><div class="spinner">Загрузка…</div></div>
+    </div>
+
+    <!-- ---- вкладка: люди (админ) ---- -->
+    <div id="tab-people" hidden>
+      <p class="hint" style="margin-bottom:10px">
+        Все, кто зарегистрировался. Забыл пароль — задайте новый и продиктуйте.
+      </p>
+      <div class="msg" id="peopleMsg" hidden></div>
+      <div id="peopleList"><div class="spinner">Загрузка…</div></div>
     </div>
 
   </div>
@@ -1120,14 +1148,28 @@
   //  АДМИНКА ЦЕН
   // ============================================================
 
+  // если у всех денежных позиций одна и та же маржа — показываем её в общем поле
+  function commonMargin() {
+    const vals = PRICE_ROWS
+      .filter(r => (r.unit || '').indexOf('₽') !== -1)
+      .map(r => Number(r.margin));
+    if (!vals.length) return null;
+    return vals.every(v => v === vals[0]) ? vals[0] : null;
+  }
+
   function renderPrices() {
     const box = $('pricesList');
     let html = '<div class="pgrp">Общая маржинальность</div>' +
       '<div class="bulk">' +
-      '<input type="number" id="bulkMargin" step="0.1" min="0" max="95" placeholder="20">' +
+      '<input type="number" id="bulkMargin" step="0.1" min="0" max="95" placeholder="—"' +
+      (commonMargin() !== null ? ' value="' + commonMargin() + '"' : '') + '>' +
       '<span class="bulk-pct">%</span>' +
       '<button class="addbtn" id="bulkApply">Применить ко всем позициям</button>' +
-      '<span class="bulk-hint">Проставит эту маржу везде и пересчитает розницу</span>' +
+      '<span class="bulk-hint">' +
+      (commonMargin() !== null
+        ? 'Сейчас у всех позиций маржа ' + commonMargin() + '%. Впишите другую — пересчитается всё.'
+        : 'У позиций разная маржа. Впишите процент, чтобы поставить одинаковый везде.') +
+      '</span>' +
       '</div>';
 
     html += '<div class="ptable"><div class="phead">' +
@@ -1375,6 +1417,87 @@
   }
 
   // ============================================================
+  //  ЛЮДИ (только админ)
+  // ============================================================
+
+  async function loadPeople() {
+    const box = $('peopleList');
+    box.innerHTML = '<div class="spinner">Загрузка…</div>';
+    try {
+      const res = await authFetch('/rest/v1/profiles?select=id,email,full_name,role,created_at&order=created_at');
+      if (!res.ok) throw new Error('Не удалось загрузить список');
+      const rows = await res.json();
+
+      // сколько смет посчитал каждый
+      const counts = {};
+      const qr = await authFetch('/rest/v1/quotes?select=user_id');
+      if (qr.ok) (await qr.json()).forEach(q => { counts[q.user_id] = (counts[q.user_id] || 0) + 1; });
+
+      box.innerHTML = rows.map(p => {
+        const d = new Date(p.created_at);
+        const isMe = me && p.id === me.id;
+        const n = counts[p.id] || 0;
+        return '<div class="person" data-id="' + p.id + '">' +
+          '<div class="person-main">' +
+            '<span class="person-name">' + (p.full_name || toLogin(p.email)) + '</span>' +
+            (p.role === 'admin' ? '<span class="role-chip">админ</span>' : '') +
+            (isMe ? '<span class="person-you">это вы</span>' : '') +
+            '<div class="person-sub">с ' + d.toLocaleDateString('ru-RU') +
+              ' · ' + n + ' ' + plural(n, 'смета', 'сметы', 'смет') + '</div>' +
+          '</div>' +
+          '<div class="person-acts">' +
+            '<button class="addbtn" data-pwd="' + p.id + '">Новый пароль</button>' +
+            (isMe ? '' : '<button class="addbtn danger" data-del="' + p.id + '">Удалить</button>') +
+          '</div></div>';
+      }).join('');
+    } catch (e) {
+      box.innerHTML = '<div class="msg">' + e.message + '</div>';
+    }
+  }
+
+  async function setUserPassword(id) {
+    const row = document.querySelector('.person[data-id="' + id + '"]');
+    const name = row.querySelector('.person-name').textContent;
+    const pwd = prompt('Новый пароль для «' + name + '»\nМинимум 6 символов:');
+    if (!pwd) return;
+
+    const msg = $('peopleMsg');
+    try {
+      const res = await authFetch('/rest/v1/rpc/admin_set_password', {
+        method: 'POST',
+        body: JSON.stringify({ p_user: id, p_password: pwd })
+      });
+      if (!res.ok) throw new Error((await res.text()).slice(0, 200));
+      msg.hidden = false; msg.className = 'msg ok';
+      msg.textContent = 'Пароль для «' + name + '» изменён. Продиктуйте его: ' + pwd;
+    } catch (e) {
+      msg.hidden = false; msg.className = 'msg';
+      msg.textContent = 'Не удалось: ' + e.message;
+    }
+  }
+
+  async function deleteUser(id) {
+    const row = document.querySelector('.person[data-id="' + id + '"]');
+    const name = row.querySelector('.person-name').textContent;
+    if (!confirm('Удалить «' + name + '»?\nЕго сметы тоже пропадут. Отменить будет нельзя.')) return;
+
+    const msg = $('peopleMsg');
+    try {
+      const res = await authFetch('/rest/v1/rpc/admin_delete_user', {
+        method: 'POST',
+        body: JSON.stringify({ p_user: id })
+      });
+      if (!res.ok) throw new Error((await res.text()).slice(0, 200));
+      msg.hidden = false; msg.className = 'msg ok';
+      msg.textContent = '«' + name + '» удалён.';
+      loadPeople();
+    } catch (e) {
+      msg.hidden = false; msg.className = 'msg';
+      msg.textContent = 'Не удалось: ' + e.message;
+    }
+  }
+
+  // ============================================================
   //  ЭКРАНЫ И СОБЫТИЯ
   // ============================================================
 
@@ -1401,9 +1524,11 @@
     $('tab-calc').hidden = name !== 'calc';
     $('tab-history').hidden = name !== 'history';
     $('tab-prices').hidden = name !== 'prices';
-    $('appScreen').classList.toggle('wide', name === 'prices');
+    $('tab-people').hidden = name !== 'people';
+    $('appScreen').classList.toggle('wide', name === 'prices' || name === 'people');
     if (name === 'history') loadHistory();
     if (name === 'prices') renderPrices();
+    if (name === 'people') loadPeople();
     if (name === 'calc') refreshPricesIfStale();
   }
 
@@ -1432,6 +1557,7 @@
     $('whoEmail').textContent = me.full_name || toLogin(me.email);
     $('roleChip').textContent = isAdmin() ? 'администратор' : 'менеджер';
     $('tabPrices').hidden = !isAdmin();
+    $('tabPeople').hidden = !isAdmin();
 
     renderOptions();
     refreshAll();
@@ -1532,6 +1658,12 @@
       if (addBtn) addPosition(addBtn.dataset.add);
 
       if (e.target.closest('#bulkApply')) applyBulkMargin();
+
+      const pwdBtn = e.target.closest('[data-pwd]');
+      if (pwdBtn) setUserPassword(pwdBtn.dataset.pwd);
+
+      const delBtn = e.target.closest('[data-del]');
+      if (delBtn) deleteUser(delBtn.dataset.del);
 
       const qh = e.target.closest('.quote-head');
       if (qh) {
