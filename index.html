@@ -687,6 +687,9 @@
     saveSession(null);
     me = null;
     lastQuote = null;
+    foundManual = null;
+    foundEditing = false;
+    try { localStorage.removeItem(FORM_KEY); } catch (e) {}
     show('login');
     showAuthMode('login');
   }
@@ -903,6 +906,94 @@
   //  РАСЧЁТ
   // ============================================================
 
+  // ============================================================
+  //  ЗАПОМИНАНИЕ РАСЧЁТА (переживает перезагрузку страницы)
+  // ============================================================
+
+  const FORM_KEY = 'kdc_form';
+
+  const pillVal = g => {
+    const b = $('options').querySelector('[data-pills="' + g + '"] button.on');
+    return b ? b.dataset.val : null;
+  };
+
+  function setPill(g, val) {
+    if (!val) return;
+    const wrap = $('options').querySelector('[data-pills="' + g + '"]');
+    if (!wrap) return;
+    const btn = wrap.querySelector('[data-val="' + val + '"]');
+    if (!btn) return;
+    wrap.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+  }
+
+  function saveForm() {
+    const opts = $('options');
+    const counts = {};
+    opts.querySelectorAll('[data-id]').forEach(r => {
+      const n = parseInt(r.querySelector('.val').textContent, 10) || 0;
+      if (n) counts[r.dataset.id] = n;
+    });
+    const partRow = opts.querySelector('[data-kind="part"]');
+
+    try {
+      localStorage.setItem(FORM_KEY, JSON.stringify({
+        liveA: $('liveA').value, liveB: $('liveB').value,
+        terrace: $('hasTerrace').checked,
+        terrA: $('terrA').value, terrB: $('terrB').value,
+        frame: $('frame').value, finish: $('finish').value,
+        distance: $('distance').value,
+        counts: counts,
+        partMat: pillVal('part'),
+        partLen: partRow ? parseInt(partRow.querySelector('.val').textContent, 10) || 0 : 0,
+        foundType: pillVal('found'),
+        pileSize: $('pileSize') ? $('pileSize').value : null,
+        foundManual: foundManual,
+        foundEditing: foundEditing,
+        roofMat: $('roofMat') ? $('roofMat').value : null,
+        roofType: pillVal('roof'),
+        steps: $('steps').checked,
+        portage: $('portage').checked,
+        portageM: $('portageM').value
+      }));
+    } catch (e) { /* нет места в хранилище — не критично */ }
+  }
+
+  function restoreForm() {
+    let s;
+    try { s = JSON.parse(localStorage.getItem(FORM_KEY)); } catch (e) { return; }
+    if (!s) return;
+
+    const set = (id, v) => { if (v !== undefined && v !== null && $(id)) $(id).value = v; };
+    set('liveA', s.liveA); set('liveB', s.liveB);
+    set('terrA', s.terrA); set('terrB', s.terrB);
+    set('frame', s.frame); set('finish', s.finish);
+    set('distance', s.distance);
+    $('hasTerrace').checked = !!s.terrace;
+
+    const opts = $('options');
+    Object.keys(s.counts || {}).forEach(id => {
+      const row = opts.querySelector('[data-id="' + id + '"]');
+      if (row) row.querySelector('.val').textContent = s.counts[id];
+    });
+
+    setPill('part', s.partMat);
+    const partRow = opts.querySelector('[data-kind="part"]');
+    if (partRow && s.partLen) partRow.querySelector('.val').textContent = s.partLen;
+
+    setPill('found', s.foundType);
+    if (s.pileSize && $('pileSize')) $('pileSize').value = s.pileSize;
+    foundManual = (s.foundManual === undefined) ? null : s.foundManual;
+    foundEditing = !!s.foundEditing;
+
+    if (s.roofMat && $('roofMat')) $('roofMat').value = s.roofMat;
+    setPill('roof', s.roofType);
+
+    $('steps').checked = !!s.steps;
+    $('portage').checked = !!s.portage;
+    set('portageM', s.portageM);
+  }
+
   function readDims() {
     const num = id => parseFloat($(id).value) || 0;
     const hasTerrace = $('hasTerrace').checked;
@@ -1061,6 +1152,7 @@
         : '—';
     }
 
+    saveForm();
     if (lastQuote) calculate();
   }
 
@@ -1382,6 +1474,7 @@
 
         await loadPrices();
         renderOptions();
+        restoreForm();   // цены перестроили опции — возвращаем набранный расчёт
         refreshAll();
         renderPrices();
         const m = $('pricesMsg');
@@ -1447,6 +1540,7 @@
       }
       await loadPrices();
       renderOptions();
+      restoreForm();   // цены перестроили опции — возвращаем набранный расчёт
       refreshAll();
 
       // при автосохранении таблицу не перерисовываем — иначе курсор выбьет из поля
@@ -1598,6 +1692,7 @@
       await loadPrices();
       if (JSON.stringify(P) !== before) {
         renderOptions();
+        restoreForm();   // цены перестроили опции — возвращаем набранный расчёт
         refreshAll();
       }
     } catch (e) { /* нет связи — считаем по тому, что есть */ }
@@ -1614,6 +1709,7 @@
     $('tabPeople').hidden = !isAdmin();
 
     renderOptions();
+    restoreForm();      // возвращаем то, что было до перезагрузки
     refreshAll();
     switchTab('calc');
     show('app');
