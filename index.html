@@ -1180,7 +1180,7 @@
 
     html += '<div class="ptable"><div class="phead">' +
       '<span>Наименование</span><span>Себестоимость</span><span>Единица</span>' +
-      '<span>Наценка&nbsp;%</span><span>Розница</span><span>Прибыль</span></div>';
+      '<span>Маржа&nbsp;%</span><span>Розница</span><span>Прибыль</span></div>';
 
     let lastGrp = '';
     PRICE_ROWS.forEach(r => {
@@ -1212,7 +1212,9 @@
       '</div>';
   }
 
-  // наценка меняет розницу, правка розницы меняет наценку
+  // Маржинальность: цена = себестоимость ÷ (1 − маржа).
+  // 100 ₽ при марже 20% → 100 ÷ 0,80 = 125 ₽, из них 25 ₽ прибыль.
+  // Правка розницы вручную пересчитывает маржу обратно.
   function recalcRow(key, driver) {
     const row = document.querySelector('.prow[data-key="' + key + '"]');
     if (!row) return;
@@ -1222,17 +1224,20 @@
 
     if (driver === 'sale') {
       const sale = Number(sEl.value) || 0;
-      mEl.value = cost > 0 ? Math.round((sale / cost - 1) * 1000) / 10 : 0;
+      mEl.value = sale > 0 ? Math.round((1 - cost / sale) * 1000) / 10 : 0;
     } else {
-      const margin = Number(mEl.value) || 0;
-      sEl.value = Math.round(cost * (1 + margin / 100));
+      let m = Number(mEl.value) || 0;
+      if (m < 0) m = 0;
+      if (m > 95) m = 95;              // выше 95% цена улетает в бесконечность
+      if (m !== Number(mEl.value)) mEl.value = m;
+      sEl.value = Math.round(cost / (1 - m / 100));
     }
 
     const sale = Number(sEl.value) || 0;
     const profit = sale - cost;
-    const marzha = sale > 0 ? Math.round(profit / sale * 1000) / 10 : 0;
+    const nacenka = cost > 0 ? Math.round(profit / cost * 1000) / 10 : 0;
     const pEl = row.querySelector('[data-f="profit"]');
-    pEl.textContent = profit ? money(profit) + '  ·  ' + marzha + '%' : '—';
+    pEl.textContent = profit ? money(profit) + '  ·  наценка ' + nacenka + '%' : '—';
     pEl.classList.toggle('neg', profit < 0);
   }
 
