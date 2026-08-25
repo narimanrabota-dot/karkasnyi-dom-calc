@@ -837,7 +837,10 @@
         '<option value="' + k + '">' + PILE_SIZES[k] + ' — ' + P[k] + ' ₽</option>').join('') +
       '</select></div>' +
       '<div class="opt-row"><span id="foundLabel">Опоры</span>' +
-      '<span class="calc-out" id="foundField">—</span></div>' +
+      '<input type="number" class="num" id="foundCount" min="0" step="1"></div>' +
+      '<div class="opt-row" style="padding-top:2px">' +
+      '<span class="price" id="foundField">—</span>' +
+      '<button class="addbtn" id="foundAuto" hidden>вернуть расчёт</button></div>' +
       '<div class="opt-warn" id="foundWarn" hidden></div>');
 
     h += accGroup('roof', 'Кровля',
@@ -921,7 +924,9 @@
     const liveOporA = oporPerSide(dims.liveA), liveOporB = oporPerSide(dims.liveB);
     const terrOporA = oporPerSide(dims.terrA), terrOporB = oporPerSide(dims.terrB);
     const liveOpor = liveOporA * liveOporB, terrOpor = terrOporA * terrOporB;
-    const foundCount = liveOpor + terrOpor;
+    // считается от сторон дома, но менеджер может вписать своё количество
+    const autoCount = liveOpor + terrOpor;
+    const foundCount = foundManual !== null ? foundManual : autoCount;
     const foundUnitPrice = isPiles ? P[pileSize] : P.found_block;
     const foundBase = foundCount * foundUnitPrice;
     const pileKmSum = isPiles && foundCount ? (km || 0) * P.pile_per_km : 0;
@@ -950,13 +955,16 @@
       winCount, winSum, doorCount, doorSum, partKey, partLen, partSum,
       steps, stepsSum, portage, portageM, portageSum,
       foundKey, isPiles, pileSize, liveOporA, liveOporB, terrOporA, terrOporB, terrOpor,
-      foundCount, foundUnitPrice, foundBase, pileKmSum, foundSum,
+      autoCount, foundCount, foundUnitPrice, foundBase, pileKmSum, foundSum,
       roofKey, roofMat, roofMatSum, roof2Sum, roofSum, groups,
       total: winSum + doorSum + partSum + stepsSum + portageSum + foundSum + roofSum
     };
   }
 
   let lastQuote = null;
+
+  // null — количество опор считается автоматически, число — задано вручную
+  let foundManual = null;
 
   function refreshAll() {
     const dims = readDims();
@@ -997,11 +1005,26 @@
     fw.hidden = o.foundCount > 0;
     if (!o.foundCount) fw.textContent = 'Укажите размеры дома в самом верху — количество опор считается от сторон';
 
+    // поле количества: подставляем расчёт, пока менеджер не вписал своё
+    const fc = $('foundCount');
+    if (fc && document.activeElement !== fc) {
+      fc.value = o.foundCount || '';
+    }
+
+    // подпись: откуда взялось число
+    const formula = o.terrOpor
+      ? o.liveOporA + '×' + o.liveOporB + ' + ' + o.terrOporA + '×' + o.terrOporB + ' = ' + o.autoCount
+      : o.liveOporA + '×' + o.liveOporB + ' = ' + o.autoCount;
+
     const ff = $('foundField');
-    if (!o.foundCount) ff.textContent = '—';
-    else if (o.terrOpor) ff.textContent = o.liveOporA + '×' + o.liveOporB + ' + ' +
-      o.terrOporA + '×' + o.terrOporB + ' = ' + o.foundCount + ' шт';
-    else ff.textContent = o.liveOporA + '×' + o.liveOporB + ' = ' + o.foundCount + ' шт';
+    if (foundManual !== null) {
+      ff.textContent = 'задано вручную, по расчёту было бы ' + (o.autoCount || 0) + ' шт';
+    } else if (!o.autoCount) {
+      ff.textContent = '—';
+    } else {
+      ff.textContent = 'по сторонам дома: ' + formula + ' шт';
+    }
+    $('foundAuto').hidden = foundManual === null;
 
     if (lastQuote) calculate();
   }
@@ -1640,7 +1663,15 @@
     });
 
     $('options').addEventListener('change', refreshAll);
-    $('options').addEventListener('input', refreshAll);
+
+    $('options').addEventListener('input', e => {
+      // вписал своё количество опор — расчёт от сторон больше не перебивает
+      if (e.target.id === 'foundCount') {
+        const v = e.target.value.trim();
+        foundManual = v === '' ? null : Math.max(0, parseInt(v, 10) || 0);
+      }
+      refreshAll();
+    });
 
     $('calcBtn').addEventListener('click', calculate);
 
@@ -1659,6 +1690,8 @@
       if (addBtn) addPosition(addBtn.dataset.add);
 
       if (e.target.closest('#bulkApply')) applyBulkMargin();
+
+      if (e.target.closest('#foundAuto')) { foundManual = null; refreshAll(); }
 
       const pwdBtn = e.target.closest('[data-pwd]');
       if (pwdBtn) setUserPassword(pwdBtn.dataset.pwd);
