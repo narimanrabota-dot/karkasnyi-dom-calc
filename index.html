@@ -342,6 +342,21 @@
     }
     .addbtn:hover { border-color: var(--green); background: var(--field); }
 
+    .bulk {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      background: var(--field); border-radius: 10px; padding: 10px 12px;
+    }
+    .bulk input {
+      width: 88px; height: 38px; padding: 0 10px;
+      font-size: 15px; font-weight: 600; text-align: right;
+      background: #fff; border: 1px solid var(--line); border-radius: 8px;
+      font-family: inherit; color: inherit; outline: none;
+    }
+    .bulk input:focus { border-color: var(--green); }
+    .bulk .bulk-pct { font-size: 15px; font-weight: 600; color: var(--ink-soft); margin-left: -4px; }
+    .bulk .addbtn { height: 38px; font-size: 13px; padding: 0 14px; }
+    .bulk .bulk-hint { font-size: 12px; color: var(--ink-soft); flex: 1 1 100%; }
+
     .sticky-save {
       position: sticky; bottom: 0; background: #fff;
       padding: 12px 0 0; border-top: 1px solid var(--line); margin-top: 14px;
@@ -1178,6 +1193,14 @@
       '<div style="margin:10px 0 6px"><button class="primary" id="saveCodesBtn" style="height:40px;font-size:14px">Сохранить коды</button></div>' +
       '<div id="codesMsg"></div>';
 
+    html += '<div class="pgrp" style="margin-top:22px">Общая маржинальность</div>' +
+      '<div class="bulk">' +
+      '<input type="number" id="bulkMargin" step="0.1" min="0" max="95" placeholder="20">' +
+      '<span class="bulk-pct">%</span>' +
+      '<button class="addbtn" id="bulkApply">Применить ко всем позициям</button>' +
+      '<span class="bulk-hint">Проставит эту маржу везде и пересчитает розницу</span>' +
+      '</div>';
+
     html += '<div class="ptable"><div class="phead">' +
       '<span>Наименование</span><span>Себестоимость</span><span>Единица</span>' +
       '<span>Маржа&nbsp;%</span><span>Розница</span><span>Прибыль</span></div>';
@@ -1239,6 +1262,54 @@
     const pEl = row.querySelector('[data-f="profit"]');
     pEl.textContent = profit ? money(profit) + '  ·  наценка ' + nacenka + '%' : '—';
     pEl.classList.toggle('neg', profit < 0);
+  }
+
+  // одна маржа сразу на все позиции
+  function applyBulkMargin() {
+    const msg = $('pricesMsg');
+    let m = Number($('bulkMargin').value);
+
+    if (isNaN(m) || $('bulkMargin').value.trim() === '') {
+      msg.hidden = false; msg.className = 'msg';
+      msg.textContent = 'Впишите процент маржинальности';
+      return;
+    }
+    if (m < 0) m = 0;
+    if (m > 95) m = 95;
+    $('bulkMargin').value = m;
+
+    let touched = 0;
+    $('pricesList').querySelectorAll('.prow[data-key]').forEach(row => {
+      const key = row.dataset.key;
+      const src = PRICE_ROWS.find(r => r.key === key);
+      if (!src) return;
+
+      const cost = Number(row.querySelector('[data-f="cost"]').value) || 0;
+      if (!cost) return;                       // нечего наценивать
+
+      // пропускаем не-денежные параметры: «Порог бесплатных км» и т.п.
+      const unit = row.querySelector('[data-f="unit"]').value;
+      if (unit.indexOf('₽') === -1) return;
+
+      row.querySelector('[data-f="margin"]').value = m;
+      recalcRow(key);
+
+      // подсветка изменённого
+      const mEl = row.querySelector('[data-f="margin"]');
+      const sEl = row.querySelector('[data-f="sale"]');
+      mEl.classList.toggle('dirty', Number(mEl.value) !== Number(src.margin));
+      sEl.classList.toggle('dirty', Number(sEl.value) !== Number(src.sale));
+      touched++;
+    });
+
+    const btn = $('savePricesBtn');
+    if (btn) btn.disabled = !$('pricesList').querySelector('input.dirty');
+
+    msg.hidden = false;
+    msg.className = 'msg ok';
+    msg.textContent = 'Маржа ' + m + '% проставлена на ' + touched +
+      ' ' + plural(touched, 'позицию', 'позиции', 'позиций') +
+      '. Проверьте розницу и нажмите «Сохранить изменения».';
   }
 
   function addPosition(grp) {
@@ -1510,6 +1581,8 @@
 
       const addBtn = e.target.closest('[data-add]');
       if (addBtn) addPosition(addBtn.dataset.add);
+
+      if (e.target.closest('#bulkApply')) applyBulkMargin();
 
       if (e.target.closest('#saveCodesBtn')) {
         const btn = $('saveCodesBtn'), msg = $('codesMsg');
