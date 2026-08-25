@@ -1253,7 +1253,8 @@
       if (m < 0) m = 0;
       if (m > 95) m = 95;              // выше 95% цена улетает в бесконечность
       if (m !== Number(mEl.value)) mEl.value = m;
-      sEl.value = Math.round(cost / (1 - m / 100));
+      // розница округляется вверх до сотен; при нулевой марже остаётся себестоимость
+      sEl.value = m > 0 ? Math.ceil(cost / (1 - m / 100) / 100) * 100 : cost;
     }
 
     const sale = Number(sEl.value) || 0;
@@ -1308,6 +1309,7 @@
 
     const btn = $('savePricesBtn');
     if (btn) btn.disabled = !$('pricesList').querySelector('input.dirty');
+    if (touched) scheduleSave();
 
     if (!silent) {
       msg.hidden = false;
@@ -1367,9 +1369,19 @@
     })();
   }
 
-  async function savePrices() {
+  let saveTimer = null;
+
+  // автосохранение: через паузу после того, как перестал печатать
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    const btn = $('savePricesBtn');
+    if (btn) btn.textContent = 'Сохраняю…';
+    saveTimer = setTimeout(() => savePrices(true), 1000);
+  }
+
+  async function savePrices(auto) {
     const btn = $('savePricesBtn'), msg = $('pricesMsg');
-    btn.disabled = true; btn.textContent = 'Сохраняю…';
+    if (btn) { btn.disabled = true; btn.textContent = 'Сохраняю…'; }
 
     const priceUpd = [], costUpd = [];
     $('pricesList').querySelectorAll('.prow[data-key]').forEach(row => {
@@ -1411,18 +1423,26 @@
       await loadPrices();
       renderOptions();
       refreshAll();
-      renderPrices();
+
+      // при автосохранении таблицу не перерисовываем — иначе курсор выбьет из поля
+      if (auto) {
+        $('pricesList').querySelectorAll('input.dirty').forEach(el => el.classList.remove('dirty'));
+      } else {
+        renderPrices();
+      }
+
       msg.hidden = false;
       msg.className = 'msg ok';
-      msg.textContent = 'Сохранено: цен — ' + priceUpd.length + ', себестоимости — ' + costUpd.length +
-        '. У менеджеров новые цены появятся при следующем входе.';
+      msg.textContent = (priceUpd.length + costUpd.length)
+        ? 'Сохранено в базу: цен — ' + priceUpd.length + ', себестоимости — ' + costUpd.length +
+          '. У менеджеров обновится при следующем входе.'
+        : 'Изменений нет';
     } catch (e) {
       msg.hidden = false;
       msg.className = 'msg';
       msg.textContent = 'Не удалось сохранить: ' + e.message;
-      btn.disabled = false;
     }
-    btn.textContent = 'Сохранить изменения';
+    if (btn) { btn.disabled = true; btn.textContent = 'Сохранено'; }
   }
 
   // ============================================================
@@ -1641,6 +1661,7 @@
 
       const btn = $('savePricesBtn');
       if (btn) btn.disabled = !$('pricesList').querySelector('input.dirty');
+      if ($('pricesList').querySelector('input.dirty')) scheduleSave();
     });
 
     // восстановление сессии
