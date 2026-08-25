@@ -400,11 +400,6 @@
         <input type="password" id="regPassword" autocomplete="new-password" minlength="6" required>
         <p class="hint">Минимум 6 символов</p>
       </div>
-      <div class="field">
-        <label for="regCode">Код доступа</label>
-        <input type="text" id="regCode" required>
-        <p class="hint">Код выдаёт руководитель. Без него регистрация не пройдёт.</p>
-      </div>
       <button class="primary" type="submit" id="regBtn">Зарегистрироваться</button>
     </form>
 
@@ -610,8 +605,8 @@
 
   function checkLogin(login) {
     const v = login.trim();
-    if (!/^[a-zA-Z0-9._-]{3,32}$/.test(v))
-      throw new Error('Логин: латиница, цифры, точка или дефис, от 3 до 32 символов');
+    if (!/^[a-zA-Zа-яёА-ЯЁ0-9._-]{3,32}$/.test(v))
+      throw new Error('Логин: буквы, цифры, точка или дефис, от 3 до 32 символов, без пробелов');
     return v;
   }
 
@@ -630,7 +625,7 @@
     saveSession({ access_token: j.access_token, refresh_token: j.refresh_token });
   }
 
-  async function register(userLogin, password, code) {
+  async function register(userLogin, password) {
     const clean = checkLogin(userLogin);
 
     const res = await fetch(SB_URL + '/auth/v1/signup', {
@@ -653,7 +648,6 @@
 
     // сразу входим — подтверждение по почте отключено
     await login(clean, password);
-    await redeemCode(code);
   }
 
   // Код проверяет база. В коде страницы его нет.
@@ -1181,20 +1175,7 @@
 
   function renderPrices() {
     const box = $('pricesList');
-    let html =
-      '<div class="pgrp">Коды доступа</div>' +
-      '<p class="hint" style="margin-bottom:8px">Кто введёт код при регистрации — получит эту роль. ' +
-      'Смените код, и старый перестанет работать.</p>' +
-      '<div class="prow" style="grid-template-columns:1fr 200px; min-width:auto">' +
-      '<span class="lbl">Админ<small>полный доступ, себестоимость, цены</small></span>' +
-      '<input type="text" id="codeAdmin" value="' + (CODES.admin || '') + '" style="text-align:left"></div>' +
-      '<div class="prow" style="grid-template-columns:1fr 200px; min-width:auto">' +
-      '<span class="lbl">Менеджер<small>только расчёт и свои сметы</small></span>' +
-      '<input type="text" id="codeManager" value="' + (CODES.manager || '') + '" style="text-align:left"></div>' +
-      '<div style="margin:10px 0 6px"><button class="primary" id="saveCodesBtn" style="height:40px;font-size:14px">Сохранить коды</button></div>' +
-      '<div id="codesMsg"></div>';
-
-    html += '<div class="pgrp" style="margin-top:22px">Общая маржинальность</div>' +
+    let html = '<div class="pgrp">Общая маржинальность</div>' +
       '<div class="bulk">' +
       '<input type="number" id="bulkMargin" step="0.1" min="0" max="95" placeholder="20">' +
       '<span class="bulk-pct">%</span>' +
@@ -1476,7 +1457,7 @@
     $('tab-prices').hidden = name !== 'prices';
     $('appScreen').classList.toggle('wide', name === 'prices');
     if (name === 'history') loadHistory();
-    if (name === 'prices') loadCodes().then(renderPrices);
+    if (name === 'prices') renderPrices();
     if (name === 'calc') refreshPricesIfStale();
   }
 
@@ -1544,13 +1525,11 @@
       btn.disabled = true; btn.textContent = 'Создаю аккаунт…';
       msg.hidden = true;
       try {
-        await register($('regEmail').value, $('regPassword').value, $('regCode').value);
+        await register($('regEmail').value, $('regPassword').value);
         await startApp();
       } catch (err) {
         msg.hidden = false; msg.className = 'msg'; msg.textContent = err.message;
-        // аккаунт мог создаться, но код не подошёл — тогда покажем экран кода
-        if (session && err.message.indexOf('код') !== -1) show('code');
-        else saveSession(null);
+        saveSession(null);
       }
       btn.disabled = false; btn.textContent = 'Зарегистрироваться';
     });
