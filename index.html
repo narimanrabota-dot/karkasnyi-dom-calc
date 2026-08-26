@@ -307,10 +307,10 @@
     /* ---------- админка цен ---------- */
 
     .pgrp {
-      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
-      color: var(--ink-soft); margin: 18px 0 6px;
+      font-size: 11px; font-weight: 600; letter-spacing: .2px;
+      color: var(--ink-soft); margin: 4px 0 10px;
     }
-    .ptable { overflow-x: auto; }
+    .ptable { overflow-x: auto; padding-bottom: 2px; }
 
     .toast {
       position: fixed; left: 50%; bottom: 24px;
@@ -326,99 +326,151 @@
 
     .prow, .phead {
       display: grid;
-      grid-template-columns: minmax(150px, 1fr) 96px 68px 96px;
-      gap: 8px; align-items: center;
-      min-width: 460px;
+      grid-template-columns: minmax(150px, 1fr) 104px 74px 108px;
+      gap: 4px; align-items: center;
+      min-width: 470px;
     }
 
     .phead {
       font-size: 10px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 1px;
-      color: #a9b3ad; padding-bottom: 10px;
+      text-transform: uppercase; letter-spacing: .9px;
+      color: #b6bec4; padding: 0 0 12px;
       position: sticky; top: 0; background: #fff; z-index: 2;
     }
-    .phead span:not(:first-child) { text-align: right; padding-right: 11px; }
+    .phead span:not(:first-child) { text-align: right; padding-right: 12px; }
 
+    /* строка: разделитель тонкий и светлый, подсветка — мягкой заливкой без сдвига */
     .prow {
-      border-bottom: 1px solid #f1f3f0;
-      transition: background .12s;
+      position: relative;
+      border-radius: 10px;
+      transition: background .16s ease;
     }
-    .prow:hover { background: #fbfcfa; }
+    .prow::after {
+      content: ''; position: absolute; left: 2px; right: 2px; bottom: 0;
+      height: 1px; background: #eef1ee;
+    }
+    .prow:last-child::after { display: none; }
+    .prow:hover { background: #fafbfa; }
 
-    .prow .lbl { font-size: 14px; line-height: 1.3; padding: 9px 0; }
+    .prow .lbl {
+      font-size: 14px; line-height: 1.35; letter-spacing: -.1px;
+      padding: 11px 4px 11px 2px; color: var(--ink);
+    }
     .prow .lbl small {
-      display: block; margin-top: 3px;
-      font-size: 11px; color: #a2ada7; letter-spacing: .2px;
+      display: block; margin-top: 2px;
+      font-size: 11px; color: #aab3b8; letter-spacing: .1px;
+      font-variant-numeric: tabular-nums;
     }
 
     /* значок «?» с объяснением, на что умножается себестоимость */
     .qmark {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 15px; height: 15px; margin-left: 6px; vertical-align: 1px;
-      border: 1px solid #ccd4cf; border-radius: 50%;
-      background: none; padding: 0; cursor: pointer;
-      font-size: 10px; font-weight: 700; line-height: 1; color: #a2ada7;
-      transition: color .12s, border-color .12s, background .12s;
+      width: 16px; height: 16px; margin-left: 7px; vertical-align: 1px;
+      border: 0; border-radius: 50%;
+      background: #eef1ee; padding: 0; cursor: pointer;
+      font-size: 10px; font-weight: 700; line-height: 1; color: #9aa5a0;
+      opacity: 0;
+      transition: opacity .16s ease, background .16s ease, color .16s ease;
     }
-    .qmark:hover { color: var(--green); border-color: var(--green); }
-    .qmark.on { color: #fff; background: var(--green); border-color: var(--green); }
+    .prow:hover .qmark, .qmark:focus-visible, .qmark.on { opacity: 1; }
+    .qmark:hover { background: #e2e8e3; color: var(--green); }
+    .qmark.on { color: #fff; background: var(--green); }
     .qnote {
       grid-column: 1 / -1;
-      margin: 0 0 9px; padding: 8px 10px;
-      background: #f4f7f3; border-radius: 8px;
-      font-size: 12.5px; line-height: 1.45; color: var(--ink-soft);
+      margin: 2px 2px 10px; padding: 11px 13px;
+      background: #f7f9f7; border-radius: 10px;
+      font-size: 12.5px; line-height: 1.5; color: var(--ink-soft);
     }
 
+    /* три поля: себестоимость — ввод, маржа — регулятор, розница — результат */
     .prow input {
-      height: 34px; padding: 0 11px;
+      height: 36px; padding: 0 12px;
       font-family: inherit; font-size: 14px; text-align: right;
       font-variant-numeric: tabular-nums;
+      letter-spacing: -.2px;
       color: var(--ink);
       background: transparent;
       border: 1px solid transparent;
-      border-radius: 8px;
+      border-radius: 9px;
       outline: none; width: 100%;
-      transition: background .12s, border-color .12s;
+      transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
     }
-    .prow input:hover { background: #f3f6f2; }
+    .prow input:hover { background: #f4f6f4; }
     .prow input:focus {
-      background: #fff; border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(47, 80, 68, .09);
+      background: #fff;
+      border-color: rgba(47, 80, 68, .38);
+      box-shadow: 0 0 0 3.5px rgba(47, 80, 68, .07);
     }
-    .prow input[data-f="sale"] { font-weight: 600; }
-    .prow input[data-f="margin"] { color: var(--ink-soft); }
+    .prow input[data-f="cost"] { color: var(--ink); }
+    .prow input[data-f="margin"] { color: #9aa5a0; font-size: 13.5px; }
+    .prow input[data-f="margin"]:hover, .prow input[data-f="margin"]:focus { color: var(--ink); }
+    .prow input[data-f="sale"] {
+      font-weight: 600; font-size: 14.5px; color: var(--green-dark);
+    }
     .prow input.dirty { color: var(--green); font-weight: 700; }
 
     .prow .profit { color: var(--green); font-weight: 600; }
     .prow .profit.neg { color: var(--warn-ink); }
 
+    /* заголовок группы: держит раздел линией сверху и воздухом */
     .pgrp-row {
       display: flex; align-items: center; gap: 10px;
-      font-size: 10px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 1px;
-      color: #a9b3ad; margin: 26px 0 2px; min-width: 460px;
+      font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1.1px;
+      color: #9aa5a0; min-width: 470px;
+      margin: 30px 0 6px; padding: 16px 2px 0;
+      border-top: 1px solid #eef1ee;
     }
-    .addbtn {
-      border: 1px dashed var(--line); background: transparent; color: var(--green);
-      font: inherit; font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0;
-      padding: 3px 9px; border-radius: 7px; cursor: pointer;
-    }
-    .addbtn:hover { border-color: var(--green); background: var(--field); }
+    .pgrp-row:first-of-type { margin-top: 6px; border-top: 0; padding-top: 0; }
 
+    .addbtn {
+      border: 1px solid var(--line); background: #fff; color: var(--green);
+      font: inherit; font-size: 11.5px; font-weight: 600;
+      text-transform: none; letter-spacing: 0;
+      padding: 4px 11px; border-radius: 8px; cursor: pointer;
+      transition: border-color .16s ease, background .16s ease;
+    }
+    .addbtn:hover { border-color: #c6d2c9; background: #fafbfa; }
+
+    /* общая маржа — отдельный блок, а не ряд случайных элементов */
     .bulk {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      background: var(--field); border-radius: 10px; padding: 10px 12px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      background: linear-gradient(180deg, #fbfcfb 0%, #f6f8f6 100%);
+      border: 1px solid #edf0ed;
+      border-radius: 14px; padding: 16px 18px; margin-bottom: 4px;
     }
     .bulk input {
-      width: 88px; height: 38px; padding: 0 10px;
-      font-size: 15px; font-weight: 600; text-align: right;
-      background: #fff; border: 1px solid var(--line); border-radius: 8px;
-      font-family: inherit; color: inherit; outline: none;
+      width: 96px; height: 40px; padding: 0 12px;
+      font-size: 17px; font-weight: 600; text-align: right;
+      font-variant-numeric: tabular-nums; letter-spacing: -.3px;
+      background: #fff; border: 1px solid var(--line); border-radius: 10px;
+      font-family: inherit; color: var(--ink); outline: none;
+      transition: border-color .16s ease, box-shadow .16s ease;
     }
-    .bulk input:focus { border-color: var(--green); }
-    .bulk .bulk-pct { font-size: 15px; font-weight: 600; color: var(--ink-soft); margin-left: -4px; }
-    .bulk .addbtn { height: 38px; font-size: 13px; padding: 0 14px; }
-    .bulk .bulk-hint { font-size: 12px; color: var(--ink-soft); flex: 1 1 100%; }
+    .bulk input:focus {
+      border-color: rgba(47, 80, 68, .38);
+      box-shadow: 0 0 0 3.5px rgba(47, 80, 68, .07);
+    }
+    .bulk .bulk-pct { font-size: 16px; font-weight: 500; color: #9aa5a0; margin-left: -6px; }
+    .bulk .addbtn { height: 40px; font-size: 13px; padding: 0 16px; border-radius: 10px; }
+    .bulk .bulk-hint {
+      font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); flex: 1 1 100%;
+    }
+
+    .sticky-save {
+      position: sticky; bottom: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 22%);
+      padding: 18px 0 0; margin-top: 10px;
+    }
+    .sticky-save button.primary {
+      height: 46px; font-size: 15px; letter-spacing: -.1px;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(47, 80, 68, .16);
+    }
+    .sticky-save button.primary:disabled {
+      opacity: 1; color: #a8b2ad;
+      background: #f2f4f2; box-shadow: none;
+    }
 
     /* ---------- список людей ---------- */
     .person {
@@ -437,11 +489,6 @@
     .person-acts .addbtn { height: 32px; font-size: 12px; padding: 0 12px; }
     .addbtn.danger { color: var(--warn-ink); }
     .addbtn.danger:hover { border-color: var(--warn-ink); background: var(--warn-bg); }
-
-    .sticky-save {
-      position: sticky; bottom: 0; background: #fff;
-      padding: 12px 0 0; border-top: 1px solid var(--line); margin-top: 14px;
-    }
 
     .spinner { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 40px 0; }
   </style>
