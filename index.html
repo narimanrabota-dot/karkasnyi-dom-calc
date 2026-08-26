@@ -1534,7 +1534,7 @@
     const box = $('historyList');
     box.innerHTML = '<div class="spinner">Загрузка…</div>';
     try {
-      const sel = 'id,client_name,total,created_at,breakdown,user_id';
+      const sel = 'id,client_name,total,created_at,breakdown,user_id,input';
       const res = await authFetch('/rest/v1/quotes?select=' + sel + '&order=created_at.desc&limit=100');
       if (!res.ok) throw new Error('Не удалось загрузить историю');
       const rows = await res.json();
