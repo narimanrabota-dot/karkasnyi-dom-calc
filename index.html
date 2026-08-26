@@ -960,6 +960,34 @@
       '</div><div class="acc-body" hidden>' + body + '</div></div>';
   }
 
+  // базовая комплектация: то, что компания продаёт чаще всего.
+  // задаём явно, чтобы порядок позиций в прайсе не мог сдвинуть умолчание.
+  // сохранённый расчёт менеджера накладывается поверх и всегда важнее.
+  const DEFAULTS = {
+    floorLive:  'floor_osb9',        // пол жилой части входит в цену метра
+    floorTerr:  'terr_rough',        // доска нестроганая входит в цену метра
+    outFinish:  'out_vagonka_c',     // снаружи вагонка класса С, доплаты нет
+    finish:     'osb',               // внутри плита ОСБ
+    roofMat:    'roof_galv',         // профнастил оцинкованный
+    pileSize:   'pile_2500x89'       // винтовые сваи большего размера
+  };
+  const DEFAULT_COUNTS = {
+    door_in_metal: 1                 // входная металлическая идёт в базе
+  };
+
+  function applyDefaults() {
+    Object.keys(DEFAULTS).forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      const has = [].some.call(el.options, o => o.value === DEFAULTS[id]);
+      if (has) el.value = DEFAULTS[id];
+    });
+    Object.keys(DEFAULT_COUNTS).forEach(id => {
+      const row = $('options').querySelector('[data-id="' + id + '"]');
+      if (row) row.querySelector('.val').textContent = DEFAULT_COUNTS[id];
+    });
+  }
+
   function renderOptions() {
     let h = '<div class="options-title">Дополнительно</div>';
 
@@ -1069,6 +1097,7 @@
 
     h += '<div class="opt-sum"><span>Доп-опции</span><b id="optSum">0 ₽</b></div>';
     $('options').innerHTML = h;
+    applyDefaults();
 
     $('deliveryHint').textContent =
       'До ' + P.delivery_free_km + ' км — доставка ' + money(P.delivery_base) +
@@ -1161,6 +1190,9 @@
     $('hasTerrace').checked = !!s.terrace;
 
     const opts = $('options');
+    // сохранённый расчёт главнее умолчаний: обнуляем всё, потом ставим сохранённое.
+    // иначе убранная менеджером дверь из базовой комплектации вернётся сама
+    opts.querySelectorAll('[data-id] .val').forEach(v => { v.textContent = '0'; });
     Object.keys(s.counts || {}).forEach(id => {
       const row = opts.querySelector('[data-id="' + id + '"]');
       if (row) row.querySelector('.val').textContent = s.counts[id];
