@@ -861,6 +861,7 @@
     return Math.max(P.roof2_min, Math.ceil(area * rate / 100) * 100);
   }
 
+  const MAX_KM = 400;   // дальше не возим
   const money = v => Math.round(v).toLocaleString('ru-RU') + ' ₽';
   const esc = s => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -1024,7 +1025,7 @@
 
     $('deliveryHint').textContent =
       'До ' + P.delivery_free_km + ' км — доставка ' + money(P.delivery_base) +
-      '. Свыше — плюс ' + money(P.delivery_per_km) + ' за каждый км сверх порога.';
+      '. Свыше — плюс ' + money(P.delivery_per_km) + ' за каждый км сверх порога. Максимум ' + MAX_KM + ' км.';
   }
 
   // ============================================================
@@ -1052,7 +1053,8 @@
     btn.classList.add('on');
   }
 
-  function saveForm() {
+  // состояние формы одним объектом: и в память браузера, и в сохранённую смету
+  function formState() {
     const opts = $('options');
     const counts = {};
     opts.querySelectorAll('[data-id]').forEach(r => {
@@ -1061,8 +1063,7 @@
     });
     const partRow = opts.querySelector('[data-kind="part"]');
 
-    try {
-      localStorage.setItem(FORM_KEY, JSON.stringify({
+    return {
         liveA: $('liveA').value, liveB: $('liveB').value,
         terrace: $('hasTerrace').checked,
         terrA: $('terrA').value, terrB: $('terrB').value,
@@ -1088,13 +1089,21 @@
         portageM: $('portageM').value,
         ventWalls: $('ventWalls') ? $('ventWalls').checked : false,
         ventRoof: $('ventRoof') ? $('ventRoof').checked : false
-      }));
-    } catch (e) { /* нет места в хранилище — не критично */ }
+    };
+  }
+
+  function saveForm() {
+    try { localStorage.setItem(FORM_KEY, JSON.stringify(formState())); }
+    catch (e) { /* нет места в хранилище — не критично */ }
   }
 
   function restoreForm() {
     let s;
     try { s = JSON.parse(localStorage.getItem(FORM_KEY)); } catch (e) { return; }
+    applyForm(s);
+  }
+
+  function applyForm(s) {
     if (!s) return;
 
     const set = (id, v) => { if (v !== undefined && v !== null && $(id)) $(id).value = v; };
@@ -1397,17 +1406,20 @@
     if (lastQuote) calculate();
   }
 
-  function calculate() {
+  // собирает смету из того, что сейчас стоит в форме. Ничего не рисует.
+  // возвращает либо { error }, либо { lines, total, note, input }
+  function buildQuote() {
     const dims = readDims();
     const frame = $('frame').value, finish = $('finish').value;
     const km = parseFloat($('distance').value);
-    const box = $('resultBox');
 
-    const err = t => { lastQuote = null; box.innerHTML = '<div class="result error">' + t + '</div>'; };
+    const err = t => ({ error: t });
 
-    if (!dims.liveArea) return err('Укажите обе стороны жилой части');
+    // жилая часть не обязательна: можно продать одну террасу или хозблок
+    if (!dims.liveArea && !dims.terrArea) return err('Укажите размеры жилой части или террасы');
     if (dims.hasTerrace && !dims.terrArea) return err('Укажите обе стороны террасы');
     if (isNaN(km) || km < 0) return err('Укажите дистанцию доставки в км');
+    if (km > MAX_KM) return err('Дальше ' + MAX_KM + ' км не возим — уточните дистанцию');
 
     const livePrice = P['m2_' + frame + '_' + baseFinish(finish)];
     const liveSum = dims.liveArea * livePrice;
@@ -1424,7 +1436,7 @@
     const lines = [];
     const add = (t, v) => lines.push({ t: t, v: v });
 
-    add('Жилая часть: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(livePrice), liveSum);
+    if (liveSum) add('Жилая часть: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(livePrice), liveSum);
     if (terrSum) add('Терраса: ' + dims.terrArea.toFixed(1) + ' м² × ' + money(terrPrice), terrSum);
     add('Доставка: ' + units + ' × ' + money(onePer), deliveryTotal);
     add('Сборка: ' + units + ' × ' + money(oneAsm), assemblyTotal);
@@ -1456,8 +1468,8 @@
     if (o.portage) add('Пронос материалов: ' + money(P.portage_base) + ' + ' + o.portageM +
       ' м × ' + money(P.portage_per_m), o.portageSum);
 
-    const note = 'Домик ' + dims.liveA + '×' + dims.liveB + ' м' +
-      (dims.terrArea ? ' + терраса ' + dims.terrA + '×' + dims.terrB + ' м' : '') +
+    const note = (dims.liveArea ? 'Домик ' + dims.liveA + '×' + dims.liveB + ' м' : 'Только терраса') +
+      (dims.terrArea ? (dims.liveArea ? ' + терраса ' : ' ') + dims.terrA + '×' + dims.terrB + ' м' : '') +
       ', всего ' + dims.totalArea.toFixed(1) + ' м²<br>' +
       'Каркас ' + FRAME_NAMES[frame] + ', отделка: ' + FINISH_NAMES[finish] + '<br>' +
       'Кровля: ' + ROOF_MATERIALS[o.roofMat].label + ', ' + o.roofKey + '-скатная. ' +
@@ -1465,12 +1477,21 @@
       units + '+' + units + ' — ' + units + ' ' + plural(units, 'доставка', 'доставки', 'доставок') +
       ' и ' + units + ' ' + plural(units, 'сборка', 'сборки', 'сборок') + ', дистанция ' + km + ' км';
 
-    lastQuote = {
-      input: { dims: dims, frame: frame, finish: finish, km: km,
-               roof: o.roofKey, roofMat: o.roofMat, found: o.foundKey, pileSize: o.pileSize },
-      breakdown: { lines: lines, note: note },
-      total: total
-    };
+    return { lines: lines, total: total, note: note, input: formState() };
+  }
+
+  function calculate() {
+    const box = $('resultBox');
+    const q = buildQuote();
+
+    if (q.error) {
+      lastQuote = null;
+      box.innerHTML = '<div class="result error">' + q.error + '</div>';
+      return;
+    }
+
+    const lines = q.lines, total = q.total, note = q.note;
+    lastQuote = { input: q.input, breakdown: { lines: lines, note: note }, total: total };
 
     box.innerHTML = '<div class="result"><div class="result-total">' + money(total) + '</div>' +
       lines.map(l => '<div class="result-row"><span>' + l.t + '</span><span>' + money(l.v) + '</span></div>').join('') +
@@ -1530,14 +1551,27 @@
         if (pr.ok) (await pr.json()).forEach(p => { names[p.id] = p.full_name || toLogin(p.email); });
       }
 
+      // цены не замораживаем: прогоняем сохранённые параметры через сегодняшний прайс
+      const mine = formState();
+      rows.forEach(q => {
+        if (!q.input || q.input.liveA === undefined) return;   // старый формат — оставляем как есть
+        try {
+          applyForm(q.input);
+          const fresh = buildQuote();
+          if (!fresh.error) { q.breakdown = { lines: fresh.lines, note: fresh.note }; q.total = fresh.total; }
+        } catch (e) { /* не смогли пересчитать — показываем сохранённое */ }
+      });
+      applyForm(mine);
+      refreshAll();
+
       box.innerHTML = rows.map(q => {
         const d = new Date(q.created_at);
         const dt = d.toLocaleDateString('ru-RU') + ' ' +
           d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         const who = isAdmin() && names[q.user_id] ? '<div class="quote-who">' + names[q.user_id] + '</div>' : '';
-        const mine = me && q.user_id === me.id;
+        const own = me && q.user_id === me.id;
         const cl = q.client_name || 'Без названия';
-        const del = (mine || isAdmin())
+        const del = (own || isAdmin())
           ? '<button class="quote-del" data-qdel="' + q.id + '" ' +
             'data-qname="' + esc(cl) + '" data-qtot="' + money(q.total) + '" ' +
             'title="Удалить смету">удалить</button>'
