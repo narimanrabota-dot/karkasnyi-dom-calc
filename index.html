@@ -191,7 +191,6 @@
     }
     .opt-row:last-child { border-bottom: none; }
     .price { color: var(--ink-soft); font-size: 12px; margin-left: 5px; }
-    .calc-out { font-weight: 600; color: var(--green); font-size: 14px; }
 
     /* количество опор: формула и результат крупно, рядом кнопка правки */
     .found-val { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
@@ -771,6 +770,7 @@
   // она сразу появилась в калькуляторе.
   let WINDOWS = [];
   let DOORS = [];
+  let PARTITIONS = {};
 
   function buildLists() {
     const mk = grp => PRICE_ROWS
@@ -785,7 +785,6 @@
   }
 
   // перегородки берутся из прайса — добавил позицию в админке, появилась здесь
-  let PARTITIONS = {};
 
   const PILE_SIZES = {
     pile_2000x76: '2000 × 76 мм',
@@ -1153,6 +1152,10 @@
     return { hasTerrace, liveA, liveB, terrA, terrB, liveArea, terrArea, totalArea: liveArea + terrArea };
   }
 
+  // null — количество опор считается автоматически, число — задано вручную
+  let foundManual = null;
+  let foundEditing = false;
+
   function readOptions(dims, area, km, frame) {
     const el = $('options');
     const pick = s => el.querySelector(s);
@@ -1200,9 +1203,10 @@
     const floorSum = floorLiveSum + floorTerrSum + meshSum + antiSum;
 
     const floorParts = [];
-    if (floorLiveKey) floorParts.push(labelOf(floorLiveKey));
+    // при заказе одной террасы позиции жилой части не показываем: их там нет
+    if (floorLiveKey && dims.liveArea) floorParts.push(labelOf(floorLiveKey));
     if (floorTerrKey && dims.terrArea) floorParts.push('терраса: ' + labelOf(floorTerrKey));
-    if (mesh) floorParts.push('сетка от грызунов');
+    if (mesh && dims.liveArea) floorParts.push('сетка от грызунов');
     if (anti) floorParts.push('антисептик');
 
     const finishSel = pick('#finish') ? pick('#finish').value : null;
@@ -1260,11 +1264,13 @@
     const groups = {
       // счётчик показывает, сколько позиций выбрано, а не сколько они стоят:
       // цена может быть ещё не задана, но выбор менеджер уже сделал
-      floor: { sum: floorSum, count: (floorLiveKey ? 1 : 0) +
-                      ((floorTerrKey && dims.terrArea) ? 1 : 0) + (mesh ? 1 : 0) + (anti ? 1 : 0),
+      floor: { sum: floorSum, count: ((floorLiveKey && dims.liveArea) ? 1 : 0) +
+                      ((floorTerrKey && dims.terrArea) ? 1 : 0) + ((mesh && dims.liveArea) ? 1 : 0) + (anti ? 1 : 0),
                text: floorParts.join(', ') },
-      finish:{ sum: outSum + inExtraSum, count: (outKey ? 1 : 0) + (finishSel ? 1 : 0),
-               text: (outKey ? 'снаружи ' + labelOf(outKey) : '') +
+      finish:{ sum: outSum + inExtraSum,
+               count: dims.liveArea ? ((outKey ? 1 : 0) + (finishSel ? 1 : 0)) : 0,
+               text: !dims.liveArea ? '' :
+                     (outKey ? 'снаружи ' + labelOf(outKey) : '') +
                      (finishSel ? ', внутри ' + FINISH_NAMES[finishSel].toLowerCase() : '') },
       param: { sum: paramSum, count: (wallKey ? 1 : 0) + (ridgeKey ? 1 : 0) + (ceilKey ? 1 : 0),
                text: paramParts.join(', ') },
@@ -1292,10 +1298,6 @@
   }
 
   let lastQuote = null;
-
-  // null — количество опор считается автоматически, число — задано вручную
-  let foundManual = null;
-  let foundEditing = false;
 
   function refreshAll() {
     const dims = readDims();
@@ -1471,7 +1473,8 @@
     const note = (dims.liveArea ? 'Домик ' + dims.liveA + '×' + dims.liveB + ' м' : 'Только терраса') +
       (dims.terrArea ? (dims.liveArea ? ' + терраса ' : ' ') + dims.terrA + '×' + dims.terrB + ' м' : '') +
       ', всего ' + dims.totalArea.toFixed(1) + ' м²<br>' +
-      'Каркас ' + FRAME_NAMES[frame] + ', отделка: ' + FINISH_NAMES[finish] + '<br>' +
+      'Каркас ' + FRAME_NAMES[frame] +
+      (dims.liveArea ? ', отделка: ' + FINISH_NAMES[finish] : '') + '<br>' +
       'Кровля: ' + ROOF_MATERIALS[o.roofMat].label + ', ' + o.roofKey + '-скатная. ' +
       'Фундамент: ' + (o.isPiles ? 'сваи ' + PILE_SIZES[o.pileSize] : 'бетонные блоки') + '<br>' +
       units + '+' + units + ' — ' + units + ' ' + plural(units, 'доставка', 'доставки', 'доставок') +
