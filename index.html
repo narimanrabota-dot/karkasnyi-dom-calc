@@ -491,6 +491,15 @@
     .addbtn.danger { color: var(--warn-ink); }
     .addbtn.danger:hover { border-color: var(--warn-ink); background: var(--warn-bg); }
 
+    .resetbtn {
+      display: block; margin: 12px auto 0;
+      font-size: 12.5px; color: var(--ink-soft);
+      background: none; border: 0; cursor: pointer;
+      padding: 4px 8px; border-radius: 8px;
+      transition: color .16s ease, background .16s ease;
+    }
+    .resetbtn:hover { color: var(--ink); background: var(--field); }
+
     .spinner { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 40px 0; }
   </style>
 </head>
@@ -613,6 +622,7 @@
       <div class="options" id="options"></div>
 
       <button class="primary" id="calcBtn" style="margin-top:16px">Рассчитать</button>
+      <button class="linkbtn resetbtn" id="resetBtn">сбросить к базовой комплектации</button>
 
       <div id="resultBox"></div>
     </div>
@@ -969,6 +979,7 @@
     outFinish:  'out_vagonka_c',     // снаружи вагонка класса С, доплаты нет
     finish:     'osb',               // внутри плита ОСБ
     roofMat:    'roof_galv',         // профнастил оцинкованный
+    partMat:    'part_osb',          // перегородки из ОСБ, длина нулевая
     pileSize:   'pile_2500x89'       // винтовые сваи большего размера
   };
   const DEFAULT_COUNTS = {
@@ -1149,6 +1160,9 @@
         counts: counts,
         partMat: $('partMat') ? $('partMat').value : null,
         partLen: partRow ? parseInt(partRow.querySelector('.val').textContent, 10) || 0 : 0,
+        wallType: pillVal('wall'),
+        ridgeType: pillVal('ridge'),
+        ceilType: pillVal('ceil'),
         foundType: pillVal('found'),
         pileSize: $('pileSize') ? $('pileSize').value : null,
         foundManual: foundManual,
@@ -1202,6 +1216,9 @@
     const partRow = opts.querySelector('[data-kind="part"]');
     if (partRow && s.partLen) partRow.querySelector('.val').textContent = s.partLen;
 
+    setPill('wall', s.wallType);
+    setPill('ridge', s.ridgeType);
+    setPill('ceil', s.ceilType);
     setPill('found', s.foundType);
     if (s.pileSize && $('pileSize')) $('pileSize').value = s.pileSize;
     foundManual = (s.foundManual === undefined) ? null : s.foundManual;
@@ -1561,6 +1578,26 @@
       ' и ' + units + ' ' + plural(units, 'сборка', 'сборки', 'сборок') + ', дистанция ' + km + ' км';
 
     return { lines: lines, total: total, note: note, input: formState() };
+  }
+
+  // возврат формы к базовой комплектации. Сметы, цены и вход не трогает
+  function resetForm() {
+    if (!confirm('Сбросить расчёт к базовой комплектации?\n\nВсё набранное будет потеряно.')) return;
+
+    try { localStorage.removeItem(FORM_KEY); } catch (e) { /* не критично */ }
+    foundManual = null;
+    foundEditing = false;
+    lastQuote = null;
+    $('resultBox').innerHTML = '';
+
+    ['liveA', 'liveB', 'terrA', 'terrB'].forEach(id => { $(id).value = ''; });
+    $('hasTerrace').checked = false;
+    $('frame').value = '50x50';
+    $('distance').value = '';
+
+    renderOptions();   // пересборка ставит базовую комплектацию заново
+    refreshAll();
+    toast('Расчёт сброшен к базовой комплектации');
   }
 
   function calculate() {
@@ -2315,6 +2352,7 @@
     });
 
     $('calcBtn').addEventListener('click', calculate);
+    $('resetBtn').addEventListener('click', resetForm);
 
     // «finish» живёт внутри блока опций — там уже есть общий обработчик
     ['frame', 'hasTerrace'].forEach(id =>
