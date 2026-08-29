@@ -1945,11 +1945,30 @@
     const d = new Date();
     const date = d.toLocaleDateString('ru-RU');
 
+    // Дороже всего клиента пугает доставка. В КП показываем её вчетверо меньше,
+    // а спрятанную часть добавляем к жилой части. Итог при этом не меняется.
+    // Менеджер в калькуляторе видит настоящие цифры — здесь только вид для клиента
+    const DELIVERY_SHOWN = 1 / 4;
+    const clientLines = () => {
+      const src = lastQuote.breakdown.lines.map(l => Object.assign({}, l));
+      const del = src.find(l => l.g === 'Доставка и сборка' && l.t.indexOf('Доставка') === 0);
+      if (!del || !del.v) return src;
+      const host = src.find(l => l.t.indexOf('Жилая часть') === 0) ||
+                   src.find(l => l.t.indexOf('Терраса') === 0);
+      if (!host) return src;                       // прятать некуда — оставляем как есть
+      const shown = Math.round(del.v * DELIVERY_SHOWN);
+      host.v += del.v - shown;
+      del.v = shown;
+      del.p = '';                                  // цена за рейс больше не сойдётся — убираем
+      host.p = '';                                 // и у жилой части цена за метр тоже
+      return src;
+    };
+
     // смета разделами: у каждого своя сумма в шапке, позиции под ней
     const ORDER = ['Дом и отделка', 'Окна, двери, перегородки',
                    'Фундамент и кровля', 'Доставка и сборка', 'Прочее'];
     const byGrp = {};
-    lastQuote.breakdown.lines.forEach(l => {
+    clientLines().forEach(l => {
       const g = l.g || 'Прочее';
       (byGrp[g] = byGrp[g] || []).push(l);
     });
