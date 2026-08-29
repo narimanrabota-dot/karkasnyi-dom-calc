@@ -1618,40 +1618,51 @@
     const total = liveSum + terrSum + deliveryTotal + assemblyTotal + o.total;
 
     const lines = [];
-    // g — раздел сметы: по нему строки группируются в КП
-    const add = (t, v, g) => lines.push({ t: t, v: v, g: g });
+    // t — название, q — количество, p — цена за единицу, v — сумма, g — раздел.
+    // старые сохранённые сметы приходят без q/p, поэтому в КП они не обязательны
+    const add = (t, q, pr, v, g) => lines.push({ t: t, q: q, p: pr, v: v, g: g });
+    const m2 = a => a.toFixed(1) + ' м²';
+    const sht = n => n + ' шт';
 
-    if (liveSum) add('Жилая часть: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(livePrice), liveSum, 'Дом и отделка');
-    if (terrSum) add('Терраса: ' + dims.terrArea.toFixed(1) + ' м² × ' + money(terrPrice), terrSum, 'Дом и отделка');
-    add('Доставка: ' + units + ' × ' + money(onePer), deliveryTotal, 'Доставка и сборка');
-    add('Сборка: ' + units + ' × ' + money(oneAsm), assemblyTotal, 'Доставка и сборка');
-    if (o.floorLiveSum) add('Пол ' + labelOf(o.floorLiveKey) + ': ' + dims.liveArea.toFixed(1) +
-      ' м² × ' + money(P[o.floorLiveKey]), o.floorLiveSum, 'Дом и отделка');
-    if (o.floorTerrSum) add('Пол террасы ' + labelOf(o.floorTerrKey) + ': ' + dims.terrArea.toFixed(1) +
-      ' м² × ' + money(P[o.floorTerrKey]), o.floorTerrSum, 'Дом и отделка');
-    if (o.meshSum) add('Сетка от грызунов: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(P.floor_mesh), o.meshSum, 'Дом и отделка');
-    if (o.antiSum) add('Обработка антисептиком: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.floor_antiseptic), o.antiSum, 'Дом и отделка');
-    if (o.outSum) add('Наружная отделка ' + labelOf(o.outKey) + ': ' + dims.liveArea.toFixed(1) +
-      ' м² × ' + money(P[o.outKey]), o.outSum, 'Дом и отделка');
-    if (o.inExtraSum) add('Внутренняя отделка ' + labelOf(o.inExtraKey) + ': ' + dims.liveArea.toFixed(1) +
-      ' м² × ' + money(P[o.inExtraKey]), o.inExtraSum, 'Дом и отделка');
-    if (o.wallSum) add('Стены 2,5 м: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.wall_25), o.wallSum, 'Дом и отделка');
-    if (o.ridgeSum) add('Конёк 120 см: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.ridge_120), o.ridgeSum, 'Дом и отделка');
-    o.winItems.forEach(w => add('Окно ' + w.label + ': ' + w.n + ' шт × ' + money(w.price), w.sum, 'Окна, двери, перегородки'));
-    o.doorItems.forEach(d => add(d.label + ': ' + d.n + ' шт × ' + money(d.price), d.sum, 'Окна, двери, перегородки'));
-    if (o.partLen) add('Перегородки ' + PARTITIONS[o.partKey] + ': ' + o.partLen + ' м × ' + money(P[o.partKey]), o.partSum, 'Окна, двери, перегородки');
-    if (o.foundBase) add((o.isPiles ? 'Сваи ' + PILE_SIZES[o.pileSize] : 'Бетонные блоки') +
-      ': ' + o.foundCount + ' × ' + money(o.foundUnitPrice), o.foundBase, 'Фундамент и кровля');
-    if (o.pileKmSum) add('Доставка свай: ' + km + ' км × ' + money(P.pile_per_km), o.pileKmSum, 'Фундамент и кровля');
-    if (o.roofMatSum) add('Кровля ' + ROOF_MATERIALS[o.roofMat].label + ': ' +
-      dims.totalArea.toFixed(1) + ' м² × ' + money(P[o.roofMat]), o.roofMatSum, 'Фундамент и кровля');
-    if (o.roof2Sum) add('Двускатная крыша: ' + dims.totalArea.toFixed(1) + ' м² × ' +
-      money(P['roof2_' + frame]), o.roof2Sum, 'Фундамент и кровля');
-    if (o.steps) add('Ступеньки', o.stepsSum, 'Прочее');
-    if (o.ventWallsSum) add('Вентзазор стен: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(P.vent_walls), o.ventWallsSum, 'Прочее');
-    if (o.ventRoofSum) add('Вентзазор крыши: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.vent_roof), o.ventRoofSum, 'Прочее');
-    if (o.portage) add('Пронос материалов: ' + money(P.portage_base) + ' + ' + o.portageM +
-      ' м × ' + money(P.portage_per_m), o.portageSum, 'Прочее');
+    if (liveSum) add('Жилая часть, каркас ' + FRAME_NAMES[frame] + ', отделка ' + FINISH_NAMES[finish],
+      m2(dims.liveArea), money(livePrice), liveSum, 'Дом и отделка');
+    if (terrSum) add('Терраса', m2(dims.terrArea), money(terrPrice), terrSum, 'Дом и отделка');
+    if (o.floorLiveSum) add('Пол ' + labelOf(o.floorLiveKey) + ' в жилой части',
+      m2(dims.liveArea), money(P[o.floorLiveKey]), o.floorLiveSum, 'Дом и отделка');
+    if (o.floorTerrSum) add('Пол террасы ' + labelOf(o.floorTerrKey),
+      m2(dims.terrArea), money(P[o.floorTerrKey]), o.floorTerrSum, 'Дом и отделка');
+    if (o.meshSum) add('Сетка от грызунов', m2(dims.liveArea), money(P.floor_mesh), o.meshSum, 'Дом и отделка');
+    if (o.antiSum) add('Обработка антисептиком', m2(dims.totalArea), money(P.floor_antiseptic), o.antiSum, 'Дом и отделка');
+    if (o.outSum) add('Наружная отделка ' + labelOf(o.outKey),
+      m2(dims.liveArea), money(P[o.outKey]), o.outSum, 'Дом и отделка');
+    if (o.inExtraSum) add('Внутренняя отделка ' + labelOf(o.inExtraKey),
+      m2(dims.liveArea), money(P[o.inExtraKey]), o.inExtraSum, 'Дом и отделка');
+    if (o.wallSum) add('Стены 2,5 м', m2(dims.totalArea), money(P.wall_25), o.wallSum, 'Дом и отделка');
+    if (o.ridgeSum) add('Конёк 120 см', m2(dims.totalArea), money(P.ridge_120), o.ridgeSum, 'Дом и отделка');
+
+    o.winItems.forEach(w => add('Окно ' + w.label, sht(w.n), money(w.price), w.sum, 'Окна, двери, перегородки'));
+    o.doorItems.forEach(d => add(d.label, sht(d.n), money(d.price), d.sum, 'Окна, двери, перегородки'));
+    if (o.partLen) add('Перегородки ' + PARTITIONS[o.partKey],
+      o.partLen + ' м', money(P[o.partKey]), o.partSum, 'Окна, двери, перегородки');
+
+    if (o.foundBase) add(o.isPiles ? 'Свая винтовая ' + PILE_SIZES[o.pileSize] : 'Бетонные блоки',
+      sht(o.foundCount), money(o.foundUnitPrice), o.foundBase, 'Фундамент и кровля');
+    if (o.pileKmSum) add('Доставка свай', km + ' км', money(P.pile_per_km), o.pileKmSum, 'Фундамент и кровля');
+    if (o.roofMatSum) add('Кровля ' + ROOF_MATERIALS[o.roofMat].label,
+      m2(dims.totalArea), money(P[o.roofMat]), o.roofMatSum, 'Фундамент и кровля');
+    if (o.roof2Sum) add('Двускатная крыша', m2(dims.totalArea), money(P['roof2_' + frame]),
+      o.roof2Sum, 'Фундамент и кровля');
+
+    add('Доставка, дистанция ' + km + ' км', units + ' ' + plural(units, 'рейс', 'рейса', 'рейсов'),
+      money(onePer), deliveryTotal, 'Доставка и сборка');
+    add('Сборка бригадой', units + ' ' + plural(units, 'день', 'дня', 'дней'),
+      money(oneAsm), assemblyTotal, 'Доставка и сборка');
+
+    if (o.steps) add('Ступеньки', '', '', o.stepsSum, 'Прочее');
+    if (o.ventWallsSum) add('Вентзазор стен', m2(dims.liveArea), money(P.vent_walls), o.ventWallsSum, 'Прочее');
+    if (o.ventRoofSum) add('Вентзазор крыши', m2(dims.totalArea), money(P.vent_roof), o.ventRoofSum, 'Прочее');
+    if (o.portage) add('Пронос материалов, база ' + money(P.portage_base),
+      o.portageM + ' м', money(P.portage_per_m), o.portageSum, 'Прочее');
 
     const note = (dims.liveArea ? 'Домик ' + dims.liveA + '×' + dims.liveB + ' м' : 'Только терраса') +
       (dims.terrArea ? (dims.liveArea ? ' + терраса ' : ' ') + dims.terrA + '×' + dims.terrB + ' м' : '') +
@@ -1690,6 +1701,8 @@
 
   // silent — расчёт идёт сам по ходу набора: пока данных мало, просто ничего не показываем.
   // по нажатию кнопки (silent = false) объясняем, чего не хватает
+  const lineText = l => l.t + (l.q ? ': ' + l.q + (l.p ? ' × ' + l.p : '') : '');
+
   function calculate(silent) {
     const box = $('resultBox');
     const q = buildQuote();
@@ -1705,7 +1718,7 @@
     lastQuote = { input: q.input, breakdown: { lines: lines, note: note }, total: total };
 
     box.innerHTML = '<div class="result"><div class="result-total">' + money(total) + '</div>' +
-      lines.map(l => '<div class="result-row"><span>' + l.t + '</span><span>' + money(l.v) + '</span></div>').join('') +
+      lines.map(l => '<div class="result-row"><span>' + esc(lineText(l)) + '</span><span>' + money(l.v) + '</span></div>').join('') +
       '<div class="result-line">' + note + '</div></div>' +
       '<div class="save-box">' +
       '<button id="saveBtn">Сохранить смету</button>' +
@@ -1930,14 +1943,16 @@
       const g = l.g || 'Прочее';
       (byGrp[g] = byGrp[g] || []).push(l);
     });
-    const rows = ORDER.filter(g => byGrp[g]).map(g => {
-      const ls = byGrp[g];
-      const sum = ls.reduce((a, l) => a + l.v, 0);
-      return '<div class="gr">' +
-        '<div class="gh"><span>' + g + '</span><b>' + money(sum) + '</b></div>' +
-        ls.map(l => '<div class="li"><span>' + esc(l.t) + '</span><i>' + money(l.v) + '</i></div>').join('') +
-        '</div>';
-    }).join('');
+    const rows = '<table><colgroup><col><col class="cq"><col class="cp"><col class="cs"></colgroup>' +
+      ORDER.filter(g => byGrp[g]).map(g => {
+        const ls = byGrp[g];
+        const sum = ls.reduce((a, l) => a + l.v, 0);
+        return '<tr class="gh"><td>' + g + '</td><td colspan="3">' + money(sum) + '</td></tr>' +
+          ls.map(l => '<tr><td>' + esc(l.t) + '</td>' +
+            '<td class="q">' + esc(l.q || '') + '</td>' +
+            '<td class="p">' + (l.p ? '× ' + esc(l.p) : '') + '</td>' +
+            '<td class="s">' + money(l.v) + '</td></tr>').join('');
+      }).join('') + '</table>';
 
     // ---- листы с фото: оформлены как в эталонном КП ----
     // не загружено — лист просто не печатаем, подсказка клиенту попасть не должна
@@ -2044,16 +2059,17 @@
       '.body { padding: 9mm 16mm 0; }' +
       'h2 { font-size: 9.5pt; font-weight: 600; text-transform: uppercase;' +
       ' letter-spacing: 1.1pt; color: #8a968f; }' +
-      '.gr { margin-top: 9pt; }' +
-      '.gh { display: flex; justify-content: space-between; align-items: baseline;' +
-      ' padding-bottom: 4pt; border-bottom: 1.2px solid #1d2b24; }' +
-      '.gh span { font-size: 9pt; font-weight: 700; text-transform: uppercase;' +
-      ' letter-spacing: 1.1pt; }' +
-      '.gh b { font-size: 12pt; font-weight: 700; font-variant-numeric: tabular-nums; }' +
-      '.li { display: flex; justify-content: space-between; align-items: baseline; gap: 12pt;' +
-      ' padding: 5pt 0; border-bottom: 1px solid #f2f4f2; color: #4a5a52; }' +
-      '.li i { font-style: normal; font-weight: 600; color: #1d2b24; white-space: nowrap;' +
-      ' font-variant-numeric: tabular-nums; }' +
+      'table { width: 100%; border-collapse: collapse; margin-top: 6pt; }' +
+      'col.cq { width: 74pt; } col.cp { width: 84pt; } col.cs { width: 92pt; }' +
+      'td { padding: 6pt 0; border-bottom: 1px solid #f2f4f2; vertical-align: baseline; }' +
+      'tr.gh td { padding: 13pt 0 4pt; border-bottom: 1.2px solid #1d2b24;' +
+      ' font-weight: 700; text-transform: uppercase; letter-spacing: 1.1pt; font-size: 9.5pt; }' +
+      'tr.gh td:last-child { text-align: right; text-transform: none; letter-spacing: 0;' +
+      ' font-size: 12.5pt; font-variant-numeric: tabular-nums; }' +
+      'td.q, td.p { text-align: right; color: #8a968f; white-space: nowrap;' +
+      ' font-variant-numeric: tabular-nums; padding-left: 10pt; }' +
+      'td.s { text-align: right; font-weight: 700; white-space: nowrap;' +
+      ' font-variant-numeric: tabular-nums; padding-left: 10pt; }' +
       '.total { margin-top: 12pt; padding: 9pt 12pt; background: #2f5044; color: #fff;' +
       ' border-radius: 3mm; display: flex; justify-content: space-between; align-items: baseline; }' +
       '.total span { font-size: 11pt; font-weight: 600; opacity: .85; }' +
@@ -2183,7 +2199,7 @@
           '<span class="tot">' + money(q.total) + '</span>' + del + '</div>' + who +
           '<div class="quote-body" hidden>' +
           (q.breakdown && q.breakdown.lines || []).map(l =>
-            '<div class="result-row"><span>' + l.t + '</span><span>' + money(l.v) + '</span></div>').join('') +
+            '<div class="result-row"><span>' + esc(lineText(l)) + '</span><span>' + money(l.v) + '</span></div>').join('') +
           '<div class="result-line">' + ((q.breakdown && q.breakdown.note) || '') + '</div></div></div>';
       }).join('');
     } catch (e) {
