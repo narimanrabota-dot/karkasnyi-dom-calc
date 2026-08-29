@@ -1612,9 +1612,6 @@
       return;
     }
 
-    // имя клиента могло быть уже вписано — не затираем его при пересборке
-    const keepClient = $('clientName') ? $('clientName').value : '';
-    const clientFocused = document.activeElement && document.activeElement.id === 'clientName';
 
     const lines = q.lines, total = q.total, note = q.note;
     lastQuote = { input: q.input, breakdown: { lines: lines, note: note }, total: total };
@@ -1623,13 +1620,10 @@
       lines.map(l => '<div class="result-row"><span>' + l.t + '</span><span>' + money(l.v) + '</span></div>').join('') +
       '<div class="result-line">' + note + '</div></div>' +
       '<div class="save-box">' +
-      '<input type="text" id="clientName" placeholder="Имя клиента или адрес">' +
       '<button id="saveBtn">Сохранить смету</button>' +
       '<button id="pdfBtn">Скачать КП</button></div>' +
       '<div id="saveMsg"></div>';
 
-    if (keepClient) $('clientName').value = keepClient;
-    if (clientFocused) $('clientName').focus();
   }
 
   // коммерческое предложение листом А4: состав и цена.
@@ -1637,7 +1631,6 @@
   function downloadOffer() {
     if (!lastQuote) return;
 
-    const client = ($('clientName') && $('clientName').value.trim()) || '';
     const d = new Date();
     const date = d.toLocaleDateString('ru-RU');
 
@@ -1646,7 +1639,7 @@
 
     const html =
       '<!doctype html><html lang="ru"><head><meta charset="utf-8">' +
-      '<title>КП ' + esc(client || date) + '</title><style>' +
+      '<title>КП ' + date + '</title><style>' +
       '@page { size: A4; margin: 18mm 16mm; }' +
       '* { box-sizing: border-box; margin: 0; padding: 0; }' +
       'body { font: 12pt/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;' +
@@ -1672,7 +1665,6 @@
       '<h1>Дачный садовый домик</h1>' +
       '<div class="sub">Коммерческое предложение</div>' +
       '<div class="meta">' +
-      (client ? '<b>Клиент:</b> ' + esc(client) + '<br>' : '') +
       '<b>Дата:</b> ' + date +
       '</div>' +
       '<h2>Что входит</h2>' +
@@ -1716,7 +1708,7 @@
         method: 'POST',
         headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({
-          client_name: $('clientName').value.trim() || null,
+          client_name: null,
           input: lastQuote.input,
           breakdown: lastQuote.breakdown,
           total: Math.round(lastQuote.total)
