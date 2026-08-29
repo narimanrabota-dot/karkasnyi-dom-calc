@@ -1637,7 +1637,7 @@
       ' м² × ' + money(P[o.inExtraKey]), o.inExtraSum, 'Дом и отделка');
     if (o.wallSum) add('Стены 2,5 м: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.wall_25), o.wallSum, 'Дом и отделка');
     if (o.ridgeSum) add('Конёк 120 см: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.ridge_120), o.ridgeSum, 'Дом и отделка');
-    o.winItems.forEach(w => add(w.label + ': ' + w.n + ' шт × ' + money(w.price), w.sum, 'Окна, двери, перегородки'));
+    o.winItems.forEach(w => add('Окно ' + w.label + ': ' + w.n + ' шт × ' + money(w.price), w.sum, 'Окна, двери, перегородки'));
     o.doorItems.forEach(d => add(d.label + ': ' + d.n + ' шт × ' + money(d.price), d.sum, 'Окна, двери, перегородки'));
     if (o.partLen) add('Перегородки ' + PARTITIONS[o.partKey] + ': ' + o.partLen + ' м × ' + money(P[o.partKey]), o.partSum, 'Окна, двери, перегородки');
     if (o.foundBase) add((o.isPiles ? 'Сваи ' + PILE_SIZES[o.pileSize] : 'Бетонные блоки') +
