@@ -1340,18 +1340,21 @@
     const pick = s => el.querySelector(s);
     const cnt = row => parseInt(row.querySelector('.val').textContent, 10) || 0;
 
-    let winCount = 0, winSum = 0; const winParts = [];
+    // winItems / doorItems — построчно для сметы: что именно и по сколько
+    let winCount = 0, winSum = 0; const winParts = [], winItems = [];
     WINDOWS.forEach(w => {
       const n = cnt(el.querySelector('[data-kind="win"][data-id="' + w.id + '"]'));
       if (!n) return;
       winCount += n; winSum += n * P[w.id]; winParts.push(w.short + ' ×' + n);
+      winItems.push({ label: w.label, n: n, price: P[w.id], sum: n * P[w.id] });
     });
 
-    let doorCount = 0, doorSum = 0; const doorParts = [];
+    let doorCount = 0, doorSum = 0; const doorParts = [], doorItems = [];
     DOORS.forEach(d => {
       const n = cnt(el.querySelector('[data-kind="door"][data-id="' + d.id + '"]'));
       if (!n) return;
       doorCount += n; doorSum += n * P[d.id]; doorParts.push(d.short + ' ×' + n);
+      doorItems.push({ label: d.label, n: n, price: P[d.id], sum: n * P[d.id] });
     });
 
     // параметры дома: высота стен и конька — доплата за м² общей площади
@@ -1466,7 +1469,7 @@
       wallKey, ridgeKey, ceilKey, wallSum, ridgeSum, paramSum,
       floorLiveKey, floorTerrKey, floorLiveSum, floorTerrSum, mesh, meshSum, anti, antiSum, floorSum,
       outKey, outSum, finishSel, inExtraKey, inExtraSum,
-      winCount, winSum, doorCount, doorSum, partKey, partLen, partSum,
+      winCount, winSum, winItems, doorCount, doorSum, doorItems, partKey, partLen, partSum,
       steps, stepsSum, portage, portageM, portageSum,
       ventWalls, ventWallsSum, ventRoof, ventRoofSum,
       foundKey, isPiles, pileSize, liveOporA, liveOporB, terrOporA, terrOporB, terrOpor,
@@ -1615,39 +1618,40 @@
     const total = liveSum + terrSum + deliveryTotal + assemblyTotal + o.total;
 
     const lines = [];
-    const add = (t, v) => lines.push({ t: t, v: v });
+    // g — раздел сметы: по нему строки группируются в КП
+    const add = (t, v, g) => lines.push({ t: t, v: v, g: g });
 
-    if (liveSum) add('Жилая часть: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(livePrice), liveSum);
-    if (terrSum) add('Терраса: ' + dims.terrArea.toFixed(1) + ' м² × ' + money(terrPrice), terrSum);
-    add('Доставка: ' + units + ' × ' + money(onePer), deliveryTotal);
-    add('Сборка: ' + units + ' × ' + money(oneAsm), assemblyTotal);
+    if (liveSum) add('Жилая часть: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(livePrice), liveSum, 'Дом и отделка');
+    if (terrSum) add('Терраса: ' + dims.terrArea.toFixed(1) + ' м² × ' + money(terrPrice), terrSum, 'Дом и отделка');
+    add('Доставка: ' + units + ' × ' + money(onePer), deliveryTotal, 'Доставка и сборка');
+    add('Сборка: ' + units + ' × ' + money(oneAsm), assemblyTotal, 'Доставка и сборка');
     if (o.floorLiveSum) add('Пол ' + labelOf(o.floorLiveKey) + ': ' + dims.liveArea.toFixed(1) +
-      ' м² × ' + money(P[o.floorLiveKey]), o.floorLiveSum);
+      ' м² × ' + money(P[o.floorLiveKey]), o.floorLiveSum, 'Дом и отделка');
     if (o.floorTerrSum) add('Пол террасы ' + labelOf(o.floorTerrKey) + ': ' + dims.terrArea.toFixed(1) +
-      ' м² × ' + money(P[o.floorTerrKey]), o.floorTerrSum);
-    if (o.meshSum) add('Сетка от грызунов: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(P.floor_mesh), o.meshSum);
-    if (o.antiSum) add('Обработка антисептиком: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.floor_antiseptic), o.antiSum);
+      ' м² × ' + money(P[o.floorTerrKey]), o.floorTerrSum, 'Дом и отделка');
+    if (o.meshSum) add('Сетка от грызунов: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(P.floor_mesh), o.meshSum, 'Дом и отделка');
+    if (o.antiSum) add('Обработка антисептиком: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.floor_antiseptic), o.antiSum, 'Дом и отделка');
     if (o.outSum) add('Наружная отделка ' + labelOf(o.outKey) + ': ' + dims.liveArea.toFixed(1) +
-      ' м² × ' + money(P[o.outKey]), o.outSum);
+      ' м² × ' + money(P[o.outKey]), o.outSum, 'Дом и отделка');
     if (o.inExtraSum) add('Внутренняя отделка ' + labelOf(o.inExtraKey) + ': ' + dims.liveArea.toFixed(1) +
-      ' м² × ' + money(P[o.inExtraKey]), o.inExtraSum);
-    if (o.wallSum) add('Стены 2,5 м: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.wall_25), o.wallSum);
-    if (o.ridgeSum) add('Конёк 120 см: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.ridge_120), o.ridgeSum);
-    if (o.winCount) add('Окна: ' + o.winCount + ' шт', o.winSum);
-    if (o.doorCount) add('Двери: ' + o.doorCount + ' шт', o.doorSum);
-    if (o.partLen) add('Перегородки ' + PARTITIONS[o.partKey] + ': ' + o.partLen + ' м × ' + money(P[o.partKey]), o.partSum);
+      ' м² × ' + money(P[o.inExtraKey]), o.inExtraSum, 'Дом и отделка');
+    if (o.wallSum) add('Стены 2,5 м: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.wall_25), o.wallSum, 'Дом и отделка');
+    if (o.ridgeSum) add('Конёк 120 см: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.ridge_120), o.ridgeSum, 'Дом и отделка');
+    o.winItems.forEach(w => add(w.label + ': ' + w.n + ' шт × ' + money(w.price), w.sum, 'Окна, двери, перегородки'));
+    o.doorItems.forEach(d => add(d.label + ': ' + d.n + ' шт × ' + money(d.price), d.sum, 'Окна, двери, перегородки'));
+    if (o.partLen) add('Перегородки ' + PARTITIONS[o.partKey] + ': ' + o.partLen + ' м × ' + money(P[o.partKey]), o.partSum, 'Окна, двери, перегородки');
     if (o.foundBase) add((o.isPiles ? 'Сваи ' + PILE_SIZES[o.pileSize] : 'Бетонные блоки') +
-      ': ' + o.foundCount + ' × ' + money(o.foundUnitPrice), o.foundBase);
-    if (o.pileKmSum) add('Доставка свай: ' + km + ' км × ' + money(P.pile_per_km), o.pileKmSum);
+      ': ' + o.foundCount + ' × ' + money(o.foundUnitPrice), o.foundBase, 'Фундамент и кровля');
+    if (o.pileKmSum) add('Доставка свай: ' + km + ' км × ' + money(P.pile_per_km), o.pileKmSum, 'Фундамент и кровля');
     if (o.roofMatSum) add('Кровля ' + ROOF_MATERIALS[o.roofMat].label + ': ' +
-      dims.totalArea.toFixed(1) + ' м² × ' + money(P[o.roofMat]), o.roofMatSum);
+      dims.totalArea.toFixed(1) + ' м² × ' + money(P[o.roofMat]), o.roofMatSum, 'Фундамент и кровля');
     if (o.roof2Sum) add('Двускатная крыша: ' + dims.totalArea.toFixed(1) + ' м² × ' +
-      money(P['roof2_' + frame]), o.roof2Sum);
-    if (o.steps) add('Ступеньки', o.stepsSum);
-    if (o.ventWallsSum) add('Вентзазор стен: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(P.vent_walls), o.ventWallsSum);
-    if (o.ventRoofSum) add('Вентзазор крыши: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.vent_roof), o.ventRoofSum);
+      money(P['roof2_' + frame]), o.roof2Sum, 'Фундамент и кровля');
+    if (o.steps) add('Ступеньки', o.stepsSum, 'Прочее');
+    if (o.ventWallsSum) add('Вентзазор стен: ' + dims.liveArea.toFixed(1) + ' м² × ' + money(P.vent_walls), o.ventWallsSum, 'Прочее');
+    if (o.ventRoofSum) add('Вентзазор крыши: ' + dims.totalArea.toFixed(1) + ' м² × ' + money(P.vent_roof), o.ventRoofSum, 'Прочее');
     if (o.portage) add('Пронос материалов: ' + money(P.portage_base) + ' + ' + o.portageM +
-      ' м × ' + money(P.portage_per_m), o.portageSum);
+      ' м × ' + money(P.portage_per_m), o.portageSum, 'Прочее');
 
     const note = (dims.liveArea ? 'Домик ' + dims.liveA + '×' + dims.liveB + ' м' : 'Только терраса') +
       (dims.terrArea ? (dims.liveArea ? ' + терраса ' : ' ') + dims.terrA + '×' + dims.terrB + ' м' : '') +
@@ -1918,8 +1922,22 @@
     const d = new Date();
     const date = d.toLocaleDateString('ru-RU');
 
-    const rows = lastQuote.breakdown.lines
-      .map(l => '<tr><td>' + esc(l.t) + '</td><td>' + money(l.v) + '</td></tr>').join('');
+    // смета разделами: у каждого своя сумма в шапке, позиции под ней
+    const ORDER = ['Дом и отделка', 'Окна, двери, перегородки',
+                   'Фундамент и кровля', 'Доставка и сборка', 'Прочее'];
+    const byGrp = {};
+    lastQuote.breakdown.lines.forEach(l => {
+      const g = l.g || 'Прочее';
+      (byGrp[g] = byGrp[g] || []).push(l);
+    });
+    const rows = ORDER.filter(g => byGrp[g]).map(g => {
+      const ls = byGrp[g];
+      const sum = ls.reduce((a, l) => a + l.v, 0);
+      return '<div class="gr">' +
+        '<div class="gh"><span>' + g + '</span><b>' + money(sum) + '</b></div>' +
+        ls.map(l => '<div class="li"><span>' + esc(l.t) + '</span><i>' + money(l.v) + '</i></div>').join('') +
+        '</div>';
+    }).join('');
 
     // ---- листы с фото: оформлены как в эталонном КП ----
     // не загружено — лист просто не печатаем, подсказка клиенту попасть не должна
@@ -2026,9 +2044,15 @@
       '.body { padding: 9mm 16mm 0; }' +
       'h2 { font-size: 9.5pt; font-weight: 600; text-transform: uppercase;' +
       ' letter-spacing: 1.1pt; color: #8a968f; }' +
-      'table { width: 100%; border-collapse: collapse; margin-top: 5pt; }' +
-      'td { padding: 6.5pt 0; border-bottom: 1px solid #e8ece9; vertical-align: top; }' +
-      'td:last-child { text-align: right; white-space: nowrap; padding-left: 12pt;' +
+      '.gr { margin-top: 9pt; }' +
+      '.gh { display: flex; justify-content: space-between; align-items: baseline;' +
+      ' padding-bottom: 4pt; border-bottom: 1.2px solid #1d2b24; }' +
+      '.gh span { font-size: 9pt; font-weight: 700; text-transform: uppercase;' +
+      ' letter-spacing: 1.1pt; }' +
+      '.gh b { font-size: 12pt; font-weight: 700; font-variant-numeric: tabular-nums; }' +
+      '.li { display: flex; justify-content: space-between; align-items: baseline; gap: 12pt;' +
+      ' padding: 5pt 0; border-bottom: 1px solid #f2f4f2; color: #4a5a52; }' +
+      '.li i { font-style: normal; font-weight: 600; color: #1d2b24; white-space: nowrap;' +
       ' font-variant-numeric: tabular-nums; }' +
       '.total { margin-top: 12pt; padding: 9pt 12pt; background: #2f5044; color: #fff;' +
       ' border-radius: 3mm; display: flex; justify-content: space-between; align-items: baseline; }' +
@@ -2045,7 +2069,7 @@
       '</div></div>' +
       '<div class="body">' +
       '<h2>Что входит</h2>' +
-      '<table>' + rows + '</table>' +
+      rows +
       '<div class="total"><span>Итого</span><b>' + money(lastQuote.total) + '</b></div>' +
       '</div>' +
       '<div class="foot">' + lastQuote.breakdown.note + '<br><br>' +
