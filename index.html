@@ -2022,30 +2022,30 @@
       'Окончательная стоимость подтверждается договором.</div>' +
       '</body></html>';
 
-    const frame = document.createElement('iframe');
-    frame.setAttribute('aria-hidden', 'true');
-    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-    document.body.appendChild(frame);
-    const doc = frame.contentDocument;
-    doc.open(); doc.write(html); doc.close();
+    // КП открываем отдельной вкладкой: видно, что получилось, и там же печать.
+    // Скрытая рамка печатала вслепую и на части браузеров выдавала пустой лист
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      // ждём, пока картинки встанут на место, иначе в PDF попадут пустые рамки
+      const fire = () => { try { win.focus(); win.print(); } catch (e) { /* закрыли вкладку */ } };
+      if (win.document.readyState === 'complete') setTimeout(fire, 400);
+      else win.addEventListener('load', () => setTimeout(fire, 400));
+      toast('Открыл КП. В окне печати выберите «Сохранить как PDF»');
+      return;
+    }
 
-    const go = () => {
-      const w = frame.contentWindow;
-      let done = false;
-      const cleanup = () => { if (done) return; done = true; frame.remove(); };
-      // убираем рамку только после того, как окно печати закрыли —
-      // иначе лист исчезнет прямо из-под диалога
-      w.addEventListener('afterprint', cleanup);
-      setTimeout(cleanup, 120000);   // страховка, если событие не придёт
-      w.focus();
-      w.print();
-    };
-    if (doc.readyState === 'complete') go();
-    else frame.onload = go;
-
-    toast(pages
-      ? 'Выберите «Сохранить как PDF». Для фото включите «Фоновая графика»'
-      : 'Выберите «Сохранить как PDF» и укажите папку');
+    // вкладку не дали открыть — отдаём файлом, его можно открыть и напечатать
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'КП ' + date.replace(/\./g, '-') + '.html';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    toast('Браузер не дал открыть вкладку — КП скачано файлом');
   }
 
   async function saveQuote() {
