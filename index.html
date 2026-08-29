@@ -938,6 +938,8 @@
   };
 
   const FRAME_NAMES = { '50x50': '50 × 50 мм', '40x100': '40 × 100 мм', '40x150': '40 × 150 мм' };
+  // утеплитель ложится в стойку каркаса, поэтому его толщина равна её глубине
+  const INSULATION = { '50x50': 'Минвата 50 мм', '40x100': 'Минвата 100 мм', '40x150': 'Минвата 150 мм' };
   const FINISH_NAMES = {
     hozblok: 'Хозблок', orgalit: 'ДВП (оргалит)', osb: 'ОСБ',
     vagonka: 'Вагонка класса С', vagonka_ab: 'Вагонка класса АБ',
@@ -2006,7 +2008,7 @@
       ['Площадь', dims.totalArea.toFixed(1) + ' м²'],
       ['Жилая', dims.liveArea ? dims.liveArea.toFixed(1) + ' м²' : '—'],
       ['Терраса', dims.terrArea ? dims.terrArea.toFixed(1) + ' м²' : '—'],
-      ['Каркас', FRAME_NAMES[frame0]]
+      ['Утепление', INSULATION[frame0] || 'Минвата']
     ];
     const specHtml = spec.map(r =>
       '<div class="srow"><span>' + r[0] + '</span><b>' + esc(r[1]) + '</b></div>').join('');
@@ -2027,7 +2029,7 @@
       '<div class="page">' +
         '<div class="ptitle center">Дачный садовый домик' +
           (dims.liveA && dims.liveB ? ' ' + dims.liveA + ' × ' + dims.liveB + ' м' : '') + '</div>' +
-        '<div class="psub center">' + esc(FRAME_NAMES[frame0]) + ' · утепление минватой</div>' +
+        '<div class="psub center">' + esc(INSULATION[frame0] || 'Минвата') + '</div>' +
         '<div class="prule"></div>' +
         '<div class="shot"><img src="' + domData + '" style="' + cropCss(getCrop('dom')) + '"></div>' +
         smallRow +
