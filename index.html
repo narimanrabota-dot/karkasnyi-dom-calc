@@ -1946,6 +1946,9 @@
 
     const d = new Date();
     const date = d.toLocaleDateString('ru-RU');
+    // цена держится месяц: снимает спор, если прайс за это время вырос
+    const till = new Date(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    const validTill = till.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
 
     // Дорогая логистика пугает клиента. В КП показываем доставку и сборку вчетверо
     // меньше, а доставку свай прячем целиком в цену свай. Спрятанное уходит
@@ -2109,6 +2112,7 @@
       '.total span { font-size: 11pt; font-weight: 600; opacity: .85; }' +
       '.total b { font-size: 21pt; font-weight: 700; letter-spacing: -.6pt;' +
       ' font-variant-numeric: tabular-nums; }' +
+      '.valid { margin-top: 5pt; text-align: right; font-size: 10.5pt; color: #8a968f; }' +
       '.contacts { margin-top: 9mm; padding-top: 6mm; border-top: 1px solid #e8ece9;' +
       ' display: flex; justify-content: space-between; align-items: center; gap: 10mm; }' +
       '.c-phone { display: block; font-size: 16pt; font-weight: 700; color: #1d2b24;' +
@@ -2128,6 +2132,7 @@
       '<h2>Что входит</h2>' +
       rows +
       '<div class="total"><span>Итого</span><b>' + money(lastQuote.total) + '</b></div>' +
+      '<div class="valid">Цена действительна до ' + validTill + '</div>' +
       '<div class="contacts">' +
         '<div class="c-info">' +
           '<a class="c-phone" href="tel:' + CO.tel + '">' + CO.phone + '</a>' +
