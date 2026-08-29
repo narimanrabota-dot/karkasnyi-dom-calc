@@ -1969,9 +1969,6 @@
     const specHtml = spec.map(r =>
       '<div class="srow"><span>' + r[0] + '</span><b>' + esc(r[1]) + '</b></div>').join('');
 
-    const foot = '<div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span>' +
-                 '<b>' + date + '</b></div>';
-
     const domData = getPhoto('dom');
     const planData = getPhoto('plan');
 
@@ -1994,7 +1991,6 @@
         '<div class="shot"><img src="' + domData + '" style="' + cropCss(getCrop('dom')) + '"></div>' +
         smallRow +
         '<div class="spec">' + specHtml + '</div>' +
-        foot +
       '</div>';
 
     const pagePlan = !planData ? '' :
@@ -2002,7 +1998,6 @@
         '<div class="ptitle">Планировка дома</div>' +
         '<div class="prule"></div>' +
         '<div class="plan"><img src="' + planData + '" style="' + cropCss(getCrop('plan')) + '"></div>' +
-        foot +
       '</div>';
 
     const pages = pageDom + pagePlan;
@@ -2044,10 +2039,6 @@
       ' gap: 8pt; padding: 8pt 0; border-bottom: 1px solid #eef1ee; }' +
       '.srow span { font-size: 16pt; color: #6b7a72; white-space: nowrap; }' +
       '.srow b { font-size: 16.5pt; font-weight: 600; text-align: right; }' +
-      '.pfoot { margin-top: auto; padding-top: 7mm; border-top: 1px solid #e8ece9;' +
-      ' display: flex; justify-content: space-between; align-items: baseline;' +
-      ' font-size: 12pt; color: #8a968f; }' +
-      '.pfoot b { font-weight: 600; color: #6b7a72; }' +
       // ---- лист со сметой ----
       '.bar { display: flex; align-items: center; gap: 12pt;' +
       ' padding: 20mm 16mm 9mm; border-bottom: 1px solid #e8ece9; }' +
@@ -2075,8 +2066,6 @@
       '.total span { font-size: 11pt; font-weight: 600; opacity: .85; }' +
       '.total b { font-size: 21pt; font-weight: 700; letter-spacing: -.6pt;' +
       ' font-variant-numeric: tabular-nums; }' +
-      '.foot { margin: 12mm 16mm 0; padding-top: 6mm; border-top: 1px solid #e8ece9;' +
-      ' font-size: 9.5pt; line-height: 1.65; color: #8a968f; }' +
       '</style></head><body>' +
       pages +
       '<div class="bar"><div class="logo">ДД</div><div>' +
@@ -2088,9 +2077,6 @@
       rows +
       '<div class="total"><span>Итого</span><b>' + money(lastQuote.total) + '</b></div>' +
       '</div>' +
-      '<div class="foot">' + lastQuote.breakdown.note + '<br><br>' +
-      'Предложение носит справочный характер. ' +
-      'Окончательная стоимость подтверждается договором.</div>' +
       '</body></html>';
 
     // КП открываем отдельной вкладкой: видно, что получилось, и там же печать.
