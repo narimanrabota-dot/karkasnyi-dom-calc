@@ -1,0 +1,139 @@
+<meta charset="utf-8">
+<title>Размер текста на листах с фото</title>
+<style>
+ :root{--ink:#1d2b24;--soft:#6b7a72;--line:#e8ece9;--green:#2f5044}
+ *{box-sizing:border-box;margin:0;padding:0}
+ body{background:#eef1ee;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--ink);padding:28px 16px 60px}
+ .head{max-width:1000px;margin:0 auto 26px}.head h1{font-size:22px;font-weight:600;letter-spacing:-.3px}
+ .head p{margin-top:6px;color:var(--soft);font-size:14px}
+ .wrap{max-width:1000px;margin:0 auto}.card{margin-bottom:36px}
+ .tag{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+ .tag b{font-size:15px;font-weight:600}.tag span{font-size:13px;color:var(--soft)}
+ .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+ .page{background:#fff;border-radius:4px;box-shadow:0 6px 26px rgba(20,40,32,.13);
+       aspect-ratio:210/297;padding:22px 20px 16px;display:flex;flex-direction:column;overflow:hidden}
+ .ptitle{font-size:var(--t);font-weight:700;letter-spacing:-.3px;color:var(--green);line-height:1.15}
+ .psub{margin-top:4px;font-size:var(--su);color:#8a968f}
+ .center{text-align:center}
+ .prule{margin-top:9px;border-bottom:1.5px solid var(--line)}
+ .shot{margin-top:12px;height:36%;border-radius:8px;background:linear-gradient(135deg,#5c8a6e,#a9c9b4);
+       display:flex;align-items:center;justify-content:center}
+ .shot span{color:#fff;font-weight:700;font-size:calc(var(--t) - 2pt);letter-spacing:.5px}
+ .shots{margin-top:8px;display:flex;gap:8px;height:11%}
+ .mini{flex:1;border-radius:6px;background:linear-gradient(135deg,#7e9a86,#c2d4c8);display:flex;align-items:center;justify-content:center}
+ .mini span{color:#fff;font-weight:700;font-size:calc(var(--su) - .5pt)}
+ .plan{margin-top:12px;flex:1;border-radius:8px;background:#f4f6f8;display:flex;align-items:center;justify-content:center}
+ .plan span{color:#9fb0bd;font-weight:700;font-size:calc(var(--t) - 2pt);letter-spacing:.5px}
+ .spec{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;column-gap:20px}
+ .srow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+       padding:5px 0;border-bottom:1px solid #eef1ee}
+ .srow span{font-size:var(--sl);color:var(--soft)}
+ .srow b{font-size:var(--sv);font-weight:600}
+ .pfoot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);
+        display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+        font-size:var(--f);color:#8a968f}
+ .pfoot b{font-weight:600;color:var(--soft);white-space:nowrap}
+</style>
+<div class="head"><h1>Листы с фото и планировкой — пять размеров текста</h1><p>Заголовок, подпись, характеристики и подвал. Скажи букву — поставлю на сайт.</p></div>
+<div class="wrap">
+  <div class="card">
+    <div class="tag"><b>A. Как сейчас</b><span>заголовок 16 · подпись 9 · характеристики 10 · подвал 9</span></div>
+    <div class="pair">
+      <div class="page" style="--t:16pt;--su:9pt;--sl:10pt;--sv:10.5pt;--f:9pt">
+        <div class="ptitle center">Дачный садовый домик 6 × 8 м</div>
+        <div class="psub center">50 × 50 мм · отделка ОСБ · утепление минватой</div>
+        <div class="prule"></div>
+        <div class="shot"><span>ФОТО ДОМА</span></div>
+        <div class="shots"><div class="mini"><span>ВИД 2</span></div><div class="mini"><span>ВИД 3</span></div><div class="mini"><span>ВИД 4</span></div></div>
+        <div class="spec"><div class="srow"><span>Размер</span><b>6 × 8 м</b></div><div class="srow"><span>Площадь</span><b>48.0 м²</b></div><div class="srow"><span>Жилая</span><b>48.0 м²</b></div><div class="srow"><span>Терраса</span><b>—</b></div><div class="srow"><span>Каркас</span><b>50 × 50 мм</b></div><div class="srow"><span>Отделка внутри</span><b>ОСБ</b></div></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+      <div class="page" style="--t:16pt;--su:9pt;--sl:10pt;--sv:10.5pt;--f:9pt">
+        <div class="ptitle">Планировка дома</div>
+        <div class="prule"></div>
+        <div class="plan"><span>ПЛАНИРОВКА</span></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>B. Чуть крупнее</b><span>заголовок 19 · подпись 10,5 · характеристики 11,5 · подвал 10</span></div>
+    <div class="pair">
+      <div class="page" style="--t:19pt;--su:10.5pt;--sl:11.5pt;--sv:12pt;--f:10pt">
+        <div class="ptitle center">Дачный садовый домик 6 × 8 м</div>
+        <div class="psub center">50 × 50 мм · отделка ОСБ · утепление минватой</div>
+        <div class="prule"></div>
+        <div class="shot"><span>ФОТО ДОМА</span></div>
+        <div class="shots"><div class="mini"><span>ВИД 2</span></div><div class="mini"><span>ВИД 3</span></div><div class="mini"><span>ВИД 4</span></div></div>
+        <div class="spec"><div class="srow"><span>Размер</span><b>6 × 8 м</b></div><div class="srow"><span>Площадь</span><b>48.0 м²</b></div><div class="srow"><span>Жилая</span><b>48.0 м²</b></div><div class="srow"><span>Терраса</span><b>—</b></div><div class="srow"><span>Каркас</span><b>50 × 50 мм</b></div><div class="srow"><span>Отделка внутри</span><b>ОСБ</b></div></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+      <div class="page" style="--t:19pt;--su:10.5pt;--sl:11.5pt;--sv:12pt;--f:10pt">
+        <div class="ptitle">Планировка дома</div>
+        <div class="prule"></div>
+        <div class="plan"><span>ПЛАНИРОВКА</span></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>C. Заметно крупнее</b><span>заголовок 22 · подпись 12 · характеристики 13 · подвал 10,5</span></div>
+    <div class="pair">
+      <div class="page" style="--t:22pt;--su:12pt;--sl:13pt;--sv:13.5pt;--f:10.5pt">
+        <div class="ptitle center">Дачный садовый домик 6 × 8 м</div>
+        <div class="psub center">50 × 50 мм · отделка ОСБ · утепление минватой</div>
+        <div class="prule"></div>
+        <div class="shot"><span>ФОТО ДОМА</span></div>
+        <div class="shots"><div class="mini"><span>ВИД 2</span></div><div class="mini"><span>ВИД 3</span></div><div class="mini"><span>ВИД 4</span></div></div>
+        <div class="spec"><div class="srow"><span>Размер</span><b>6 × 8 м</b></div><div class="srow"><span>Площадь</span><b>48.0 м²</b></div><div class="srow"><span>Жилая</span><b>48.0 м²</b></div><div class="srow"><span>Терраса</span><b>—</b></div><div class="srow"><span>Каркас</span><b>50 × 50 мм</b></div><div class="srow"><span>Отделка внутри</span><b>ОСБ</b></div></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+      <div class="page" style="--t:22pt;--su:12pt;--sl:13pt;--sv:13.5pt;--f:10.5pt">
+        <div class="ptitle">Планировка дома</div>
+        <div class="prule"></div>
+        <div class="plan"><span>ПЛАНИРОВКА</span></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>D. Крупный</b><span>заголовок 25 · подпись 13 · характеристики 14,5 · подвал 11</span></div>
+    <div class="pair">
+      <div class="page" style="--t:25pt;--su:13pt;--sl:14.5pt;--sv:15pt;--f:11pt">
+        <div class="ptitle center">Дачный садовый домик 6 × 8 м</div>
+        <div class="psub center">50 × 50 мм · отделка ОСБ · утепление минватой</div>
+        <div class="prule"></div>
+        <div class="shot"><span>ФОТО ДОМА</span></div>
+        <div class="shots"><div class="mini"><span>ВИД 2</span></div><div class="mini"><span>ВИД 3</span></div><div class="mini"><span>ВИД 4</span></div></div>
+        <div class="spec"><div class="srow"><span>Размер</span><b>6 × 8 м</b></div><div class="srow"><span>Площадь</span><b>48.0 м²</b></div><div class="srow"><span>Жилая</span><b>48.0 м²</b></div><div class="srow"><span>Терраса</span><b>—</b></div><div class="srow"><span>Каркас</span><b>50 × 50 мм</b></div><div class="srow"><span>Отделка внутри</span><b>ОСБ</b></div></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+      <div class="page" style="--t:25pt;--su:13pt;--sl:14.5pt;--sv:15pt;--f:11pt">
+        <div class="ptitle">Планировка дома</div>
+        <div class="prule"></div>
+        <div class="plan"><span>ПЛАНИРОВКА</span></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>E. Очень крупный</b><span>заголовок 29 · подпись 14 · характеристики 16 · подвал 12 — видно через стол</span></div>
+    <div class="pair">
+      <div class="page" style="--t:29pt;--su:14pt;--sl:16pt;--sv:16.5pt;--f:12pt">
+        <div class="ptitle center">Дачный садовый домик 6 × 8 м</div>
+        <div class="psub center">50 × 50 мм · отделка ОСБ · утепление минватой</div>
+        <div class="prule"></div>
+        <div class="shot"><span>ФОТО ДОМА</span></div>
+        <div class="shots"><div class="mini"><span>ВИД 2</span></div><div class="mini"><span>ВИД 3</span></div><div class="mini"><span>ВИД 4</span></div></div>
+        <div class="spec"><div class="srow"><span>Размер</span><b>6 × 8 м</b></div><div class="srow"><span>Площадь</span><b>48.0 м²</b></div><div class="srow"><span>Жилая</span><b>48.0 м²</b></div><div class="srow"><span>Терраса</span><b>—</b></div><div class="srow"><span>Каркас</span><b>50 × 50 мм</b></div><div class="srow"><span>Отделка внутри</span><b>ОСБ</b></div></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+      <div class="page" style="--t:29pt;--su:14pt;--sl:16pt;--sv:16.5pt;--f:12pt">
+        <div class="ptitle">Планировка дома</div>
+        <div class="prule"></div>
+        <div class="plan"><span>ПЛАНИРОВКА</span></div>
+        <div class="pfoot"><span>Дачный садовый домик · коммерческое предложение</span><b>29.08.2026</b></div>
+      </div>
+    </div>
+  </div>
+</div>
