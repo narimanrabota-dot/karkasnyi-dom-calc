@@ -491,8 +491,33 @@
     .addbtn.danger { color: var(--warn-ink); }
     .addbtn.danger:hover { border-color: var(--warn-ink); background: var(--warn-bg); }
 
+    /* ---------- окно подготовки КП ---------- */
+    .modal {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(18, 34, 27, .45);
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 24px 16px; overflow-y: auto;
+    }
+    .modal-card {
+      width: 100%; max-width: 560px; background: #fff;
+      border-radius: 16px; padding: 22px 22px 20px;
+      box-shadow: 0 24px 60px rgba(18, 42, 32, .3);
+    }
+    .modal-head { display: flex; align-items: flex-start; gap: 12px; }
+    .modal-title { font-size: 18px; font-weight: 600; letter-spacing: -.2px; }
+    .modal-sub { margin-top: 5px; font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); }
+    .modal-x {
+      margin-left: auto; flex: 0 0 auto; width: 30px; height: 30px;
+      border: 0; background: var(--field); border-radius: 8px; cursor: pointer;
+      font-size: 19px; line-height: 1; color: var(--ink-soft);
+    }
+    .modal-x:hover { background: #eceeec; color: var(--ink); }
+    .modal-card .primary { margin-top: 18px; }
+
     /* ---------- фото дома и планировка для КП ---------- */
-    .photos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+    .photos { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 18px; }
+    .photo-slot.wide { grid-column: 1 / -1; }
+    .photo-slot.wide .photo-frame { aspect-ratio: 3 / 2; }
     .photo-frame {
       position: relative; width: 100%; aspect-ratio: 210 / 297;
       border: 1.5px dashed #ccd4cf; border-radius: 10px;
@@ -646,31 +671,6 @@
 
       <div class="options" id="options"></div>
 
-      <div class="photos">
-        <div class="photo-slot" data-slot="dom">
-          <div class="photo-frame" id="frameDom">
-            <img alt="" hidden>
-            <div class="photo-empty">Загрузите<br>фото дома</div>
-          </div>
-          <div class="photo-acts">
-            <button class="linkbtn photo-load" data-load="dom">Загрузить фото дома</button>
-            <button class="linkbtn photo-del" data-del-photo="dom" hidden>убрать</button>
-          </div>
-          <input type="range" class="photo-zoom" data-zoom="dom" min="100" max="300" value="100" hidden>
-        </div>
-        <div class="photo-slot" data-slot="plan">
-          <div class="photo-frame" id="framePlan">
-            <img alt="" hidden>
-            <div class="photo-empty">Загрузите<br>планировку</div>
-          </div>
-          <div class="photo-acts">
-            <button class="linkbtn photo-load" data-load="plan">Загрузить планировку</button>
-            <button class="linkbtn photo-del" data-del-photo="plan" hidden>убрать</button>
-          </div>
-          <input type="range" class="photo-zoom" data-zoom="plan" min="100" max="300" value="100" hidden>
-        </div>
-      </div>
-      <input type="file" id="photoInput" accept="image/*" hidden>
 
       <button class="primary" id="calcBtn" style="margin-top:16px">Рассчитать</button>
       <button class="linkbtn resetbtn" id="resetBtn">сбросить к базовой комплектации</button>
@@ -1674,7 +1674,7 @@
       '<div class="result-line">' + note + '</div></div>' +
       '<div class="save-box">' +
       '<button id="saveBtn">Сохранить смету</button>' +
-      '<button id="pdfBtn">Скачать КП</button></div>' +
+      '<button id="pdfBtn">Подготовить КП</button></div>' +
       '<div id="saveMsg"></div>';
 
   }
@@ -1708,7 +1708,8 @@
   const photoKey = slot => 'kdc_photo_' + slot + '_' + calcId();
   const cropKey  = slot => 'kdc_crop_'  + slot + '_' + calcId();
 
-  const PHOTO_SLOTS = { dom: 'фото дома', plan: 'планировку' };
+  const PHOTO_SLOTS = { dom: 'главное фото', dom2: 'фото', dom3: 'фото', plan: 'планировку' };
+  const SMALL_SLOTS = ['dom2', 'dom3'];
   const CROP_DEFAULT = { s: 1, x: 0, y: 0 };   // масштаб и смещение в процентах
 
   function getPhoto(slot) {
@@ -1799,6 +1800,12 @@
   }
 
   function renderPhotos() { Object.keys(PHOTO_SLOTS).forEach(renderPhoto); }
+
+  function openKpModal() {
+    if (!lastQuote) return;
+    renderPhotos();
+    $('kpModal').hidden = false;
+  }
 
   function bindPhotos() {
     const input = $('photoInput');
@@ -1904,6 +1911,13 @@
     const domData = getPhoto('dom');
     const planData = getPhoto('plan');
 
+    // дополнительные виды идут рядком под главным фото. Нет их — ряда тоже нет
+    const smalls = SMALL_SLOTS.filter(getPhoto);
+    const smallRow = !smalls.length ? '' :
+      '<div class="shots">' + smalls.map(k =>
+        '<div class="mini"><img src="' + getPhoto(k) + '" style="' + cropCss(getCrop(k)) + '"></div>'
+      ).join('') + '</div>';
+
     const pageDom = !domData ? '' :
       '<div class="page">' +
         '<div class="ptitle center">Дачный садовый домик' +
@@ -1912,6 +1926,7 @@
           esc(FINISH_NAMES[$('finish').value].toLowerCase()) + ' · утепление минватой</div>' +
         '<div class="prule"></div>' +
         '<div class="shot"><img src="' + domData + '" style="' + cropCss(getCrop('dom')) + '"></div>' +
+        smallRow +
         '<div class="spec">' + specHtml + '</div>' +
         foot +
       '</div>';
@@ -1942,9 +1957,14 @@
       '.center { text-align: center; }' +
       '.prule { margin-top: 9pt; border-bottom: 1.5px solid #e8ece9; }' +
       // большое фото: заполняет рамку, скруглённые углы
-      '.shot { margin-top: 12mm; height: 118mm; border-radius: 3mm; overflow: hidden;' +
+      '.shot { margin-top: 10mm; height: 96mm; border-radius: 3mm; overflow: hidden;' +
       ' background: #f2f4f2; position: relative; }' +
       '.shot img { position: absolute; inset: 0; width: 100%; height: 100%;' +
+      ' object-fit: cover; transform-origin: center; }' +
+      '.shots { margin-top: 5mm; display: flex; gap: 5mm; }' +
+      '.mini { flex: 1; height: 34mm; border-radius: 2.5mm; overflow: hidden;' +
+      ' background: #f2f4f2; position: relative; }' +
+      '.mini img { position: absolute; inset: 0; width: 100%; height: 100%;' +
       ' object-fit: cover; transform-origin: center; }' +
       // планировка вписывается целиком — её обрезать нельзя
       '.plan { margin-top: 10mm; flex: 1; border-radius: 3mm; overflow: hidden;' +
@@ -2770,7 +2790,10 @@
 
     document.addEventListener('click', e => {
       if (e.target.closest('#saveBtn')) saveQuote();
-      if (e.target.closest('#pdfBtn')) downloadOffer();
+      if (e.target.closest('#pdfBtn')) openKpModal();
+      if (e.target.closest('#kpClose')) $('kpModal').hidden = true;
+      if (e.target.closest('#kpDownload')) { $('kpModal').hidden = true; downloadOffer(); }
+      if (e.target.id === 'kpModal') $('kpModal').hidden = true;
       if (e.target.closest('#savePricesBtn')) savePrices();
 
       const addBtn = e.target.closest('[data-add]');
@@ -2877,6 +2900,58 @@
     }
   });
   </script>
+
+
+  <!-- ============ ОКНО ПОДГОТОВКИ КП ============ -->
+  <div class="modal" id="kpModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h2 class="modal-title">Подготовка КП</h2>
+          <p class="modal-sub">Загрузите фото — они пойдут первыми листами. Тяните картинку мышкой, ползунком меняйте масштаб.</p>
+        </div>
+        <button class="modal-x" id="kpClose" title="Закрыть">×</button>
+      </div>
+
+      <div class="photos">
+        <div class="photo-slot wide" data-slot="dom">
+          <div class="photo-frame"><img alt="" hidden><div class="photo-empty">Главное фото дома</div></div>
+          <div class="photo-acts">
+            <button class="linkbtn photo-load" data-load="dom">Загрузить</button>
+            <button class="linkbtn photo-del" data-del-photo="dom" hidden>убрать</button>
+          </div>
+          <input type="range" class="photo-zoom" data-zoom="dom" min="100" max="300" value="100" hidden>
+        </div>
+        <div class="photo-slot" data-slot="dom2">
+          <div class="photo-frame"><img alt="" hidden><div class="photo-empty">Ещё вид</div></div>
+          <div class="photo-acts">
+            <button class="linkbtn photo-load" data-load="dom2">Загрузить</button>
+            <button class="linkbtn photo-del" data-del-photo="dom2" hidden>убрать</button>
+          </div>
+          <input type="range" class="photo-zoom" data-zoom="dom2" min="100" max="300" value="100" hidden>
+        </div>
+        <div class="photo-slot" data-slot="dom3">
+          <div class="photo-frame"><img alt="" hidden><div class="photo-empty">Ещё вид</div></div>
+          <div class="photo-acts">
+            <button class="linkbtn photo-load" data-load="dom3">Загрузить</button>
+            <button class="linkbtn photo-del" data-del-photo="dom3" hidden>убрать</button>
+          </div>
+          <input type="range" class="photo-zoom" data-zoom="dom3" min="100" max="300" value="100" hidden>
+        </div>
+        <div class="photo-slot wide" data-slot="plan">
+          <div class="photo-frame"><img alt="" hidden><div class="photo-empty">Планировка дома</div></div>
+          <div class="photo-acts">
+            <button class="linkbtn photo-load" data-load="plan">Загрузить</button>
+            <button class="linkbtn photo-del" data-del-photo="plan" hidden>убрать</button>
+          </div>
+          <input type="range" class="photo-zoom" data-zoom="plan" min="100" max="300" value="100" hidden>
+        </div>
+      </div>
+
+      <input type="file" id="photoInput" accept="image/*" hidden>
+      <button class="primary" id="kpDownload">Скачать PDF</button>
+    </div>
+  </div>
 
 </body>
 </html>
