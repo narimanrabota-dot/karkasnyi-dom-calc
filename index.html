@@ -1963,8 +1963,7 @@
       ['Площадь', dims.totalArea.toFixed(1) + ' м²'],
       ['Жилая', dims.liveArea ? dims.liveArea.toFixed(1) + ' м²' : '—'],
       ['Терраса', dims.terrArea ? dims.terrArea.toFixed(1) + ' м²' : '—'],
-      ['Каркас', FRAME_NAMES[frame0]],
-      ['Отделка', FINISH_NAMES[$('finish').value]]
+      ['Каркас', FRAME_NAMES[frame0]]
     ];
     const specHtml = spec.map(r =>
       '<div class="srow"><span>' + r[0] + '</span><b>' + esc(r[1]) + '</b></div>').join('');
@@ -1985,8 +1984,7 @@
       '<div class="page">' +
         '<div class="ptitle center">Дачный садовый домик' +
           (dims.liveA && dims.liveB ? ' ' + dims.liveA + ' × ' + dims.liveB + ' м' : '') + '</div>' +
-        '<div class="psub center">' + esc(FRAME_NAMES[frame0]) + ' · отделка ' +
-          esc(FINISH_NAMES[$('finish').value].toLowerCase()) + ' · утепление минватой</div>' +
+        '<div class="psub center">' + esc(FRAME_NAMES[frame0]) + ' · утепление минватой</div>' +
         '<div class="prule"></div>' +
         '<div class="shot"><img src="' + domData + '" style="' + cropCss(getCrop('dom')) + '"></div>' +
         smallRow +
