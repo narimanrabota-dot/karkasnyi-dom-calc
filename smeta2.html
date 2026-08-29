@@ -1,0 +1,143 @@
+<meta charset="utf-8">
+<title>Смета — ещё 10 вариантов</title>
+<style>
+  :root { --ink:#1d2b24; --soft:#6b7a72; --line:#e8ece9; --green:#2f5044; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#eef1ee; font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:var(--ink); padding:28px 16px 60px; }
+  .head { max-width:900px; margin:0 auto 26px; }
+  .head h1 { font-size:22px; font-weight:600; letter-spacing:-.3px; }
+  .head p { margin-top:6px; color:var(--soft); font-size:14px; }
+  .wrap { max-width:900px; margin:0 auto; }
+  .card { margin-bottom:34px; }
+  .tag { display:flex; align-items:baseline; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .tag b { font-size:15px; font-weight:600; }
+  .tag span { font-size:13px; color:var(--soft); }
+  .sheet { width:100%; max-width:794px; background:#fff; border-radius:4px;
+           box-shadow:0 6px 26px rgba(20,40,32,.13); padding:34px 38px 30px; font-size:11.5px; line-height:1.5; }
+  .bar { display:flex; align-items:center; gap:12px; padding-bottom:16px; border-bottom:1px solid var(--line); margin-bottom:18px; }
+  .logo { width:42px; height:42px; flex:0 0 auto; border-radius:10px; background:var(--green); color:#fff;
+          display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:700; letter-spacing:-.5px; }
+  .bar h1 { font-size:17px; font-weight:600; letter-spacing:-.3px; }
+  .bar .sub { margin-top:2px; font-size:10px; color:var(--soft); }
+  h2 { font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:1.2px; color:#8a968f; margin-bottom:8px; }
+  table { width:100%; border-collapse:collapse; }
+  .num { font-variant-numeric:tabular-nums; }
+  .calc, .sm, .q { color:#9aa5a0; font-size:10.5px; }
+  .tot { margin-top:16px; padding:12px 15px; background:var(--green); color:#fff; border-radius:9px;
+         display:flex; justify-content:space-between; align-items:baseline; }
+  .tot span { font-size:11px; font-weight:600; opacity:.85; }
+  .tot b { font-size:20px; font-weight:700; letter-spacing:-.5px; }
+
+  /* 6 чек */
+  .v6 .ln { display:flex; align-items:baseline; gap:6px; padding:6px 0; }
+  .v6 .dots { flex:1; border-bottom:1px dotted #c9d2cc; transform:translateY(-3px); }
+  .v6 .vl { font-weight:600; white-space:nowrap; }
+
+  /* 7 две колонки */
+  .v7 .cols { column-count:2; column-gap:26px; }
+  .v7 .it { break-inside:avoid; padding:6px 0; border-bottom:1px solid var(--line); }
+  .v7 .nm { font-weight:600; }
+  .v7 .rw { display:flex; justify-content:space-between; align-items:baseline; margin-top:1px; color:#9aa5a0; font-size:10.5px; }
+  .v7 .rw b { color:var(--ink); font-size:11.5px; }
+
+  /* 8 доли */
+  .v8 td { padding:7px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+  .v8 td:last-child { text-align:right; white-space:nowrap; padding-left:14px; font-weight:600; }
+  .v8 .track { margin-top:4px; height:3px; background:#eef1ee; border-radius:2px; max-width:70%; }
+  .v8 .track i { display:block; height:100%; background:var(--green); border-radius:2px; }
+  .v8 .pct { font-weight:400; color:#9aa5a0; font-size:10px; }
+
+  /* 9 нумерация */
+  .v9 td { padding:5px 0; border-bottom:1px solid #f2f4f2; }
+  .v9 td:last-child { text-align:right; white-space:nowrap; padding-left:14px; font-weight:600; }
+  .v9 tr.g td { border-bottom:1.5px solid var(--ink); padding-top:13px; font-weight:700;
+                text-transform:uppercase; letter-spacing:.9px; font-size:10px; }
+  .v9 .no { display:inline-block; min-width:26px; color:#9aa5a0; }
+
+  /* 10 карточки */
+  .v10 .tiles { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .v10 .tile { background:#f7f9f7; border-radius:9px; padding:10px 12px; }
+  .v10 .nm { font-weight:600; }
+  .v10 .vl { margin-top:5px; font-size:14px; font-weight:700; color:var(--green); }
+
+  /* 11 зебра */
+  .v11 td { padding:8px 0; vertical-align:top; }
+  .v11 td:last-child { text-align:right; white-space:nowrap; padding-left:14px; font-weight:700; font-size:13px; }
+  .v11 tr:nth-child(odd) td { background:#f7f9f7; }
+  .v11 tr td:first-child { padding-left:10px; border-radius:7px 0 0 7px; }
+  .v11 tr td:last-child { padding-right:10px; border-radius:0 7px 7px 0; }
+
+  /* 12 единицы */
+  .v12 th { font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:#8a968f;
+            text-align:right; padding:0 0 7px; border-bottom:1.5px solid var(--line); }
+  .v12 th:first-child { text-align:left; }
+  .v12 td { padding:6px 0; border-bottom:1px solid #f2f4f2; text-align:right; }
+  .v12 td:first-child { text-align:left; }
+  .v12 td:last-child { font-weight:600; }
+  .v12 col.c2 { width:46px; } .v12 col.c3 { width:56px; } .v12 col.c4 { width:82px; } .v12 col.c5 { width:92px; }
+
+  /* 13 без линий */
+  .v13 .ln { display:flex; justify-content:space-between; align-items:baseline; gap:18px; padding:9px 0; }
+  .v13 .nm { font-weight:600; }
+  .v13 b { font-size:12.5px; white-space:nowrap; }
+
+  /* 14 метки слева */
+  .v14 .blk { display:grid; grid-template-columns:120px 1fr; gap:16px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .v14 .blk:last-of-type { border-bottom:0; }
+  .v14 .lab { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:1.1px; color:var(--green); padding-top:3px; }
+  .v14 td { padding:3px 0; }
+  .v14 td:last-child { text-align:right; white-space:nowrap; padding-left:14px; font-weight:600; }
+
+  /* 15 спецификация */
+  .v15 th { font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:#8a968f;
+            text-align:right; padding:0 0 7px; border-bottom:1.5px solid var(--line); }
+  .v15 th:nth-child(1), .v15 th:nth-child(2) { text-align:left; }
+  .v15 td { padding:6px 0; border-bottom:1px solid #f2f4f2; text-align:right; }
+  .v15 td:nth-child(1), .v15 td:nth-child(2) { text-align:left; }
+  .v15 td:last-child { font-weight:600; }
+  .v15 .code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px; color:#8a968f; letter-spacing:.3px; }
+  .v15 col.c0 { width:76px; } .v15 col.c3 { width:66px; } .v15 col.c4 { width:92px; }
+</style>
+<div class="head"><h1>Смета в КП — ещё 10 вариантов</h1><p>Те же цифры, разная подача. Скажи номер — поставлю на сайт.</p></div>
+<div class="wrap">
+  <div class="card">
+    <div class="tag"><b>6. Чек с точками</b><span>название и цена соединены точками — глаз не теряет строку</span></div>
+    <div class="sheet v6"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><h2>Что входит</h2><div class="lines"><div class="ln"><span class="nm">Жилая часть, каркас 50 × 50 мм, ОСБ · 48.0 м² × 11 500 ₽</span><span class="dots"></span><span class="vl num">552 000 ₽</span></div><div class="ln"><span class="nm">Пол ОСБ 15 мм в жилой части · 48.0 м² × 1 000 ₽</span><span class="dots"></span><span class="vl num">48 000 ₽</span></div><div class="ln"><span class="nm">Окно ПВХ 100 × 100 см · 2 шт × 8 000 ₽</span><span class="dots"></span><span class="vl num">16 000 ₽</span></div><div class="ln"><span class="nm">Окно ПВХ 60 × 90 см · 1 шт × 5 000 ₽</span><span class="dots"></span><span class="vl num">5 000 ₽</span></div><div class="ln"><span class="nm">Дверь входная металлическая · 1 шт × 14 300 ₽</span><span class="dots"></span><span class="vl num">14 300 ₽</span></div><div class="ln"><span class="nm">Свая винтовая 2500 × 89 мм · 20 шт × 6 500 ₽</span><span class="dots"></span><span class="vl num">130 000 ₽</span></div><div class="ln"><span class="nm">Кровля двускатная, профнастил оцинк. · 48.0 м² × 2 000 ₽</span><span class="dots"></span><span class="vl num">96 000 ₽</span></div><div class="ln"><span class="nm">Доставка, дистанция 60 км · 4 рейса × 17 200 ₽</span><span class="dots"></span><span class="vl num">68 800 ₽</span></div><div class="ln"><span class="nm">Сборка бригадой · 4 дня × 14 300 ₽</span><span class="dots"></span><span class="vl num">57 200 ₽</span></div></div><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>7. Две колонки</b><span>вдвое компактнее, всё влезает на пол-листа</span></div>
+    <div class="sheet v7"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><h2>Что входит</h2><div class="cols"><div class="it"><div class="nm">Жилая часть, каркас 50 × 50 мм, ОСБ</div><div class="rw"><span>48.0 м² × 11 500 ₽</span><b class="num">552 000 ₽</b></div></div><div class="it"><div class="nm">Пол ОСБ 15 мм в жилой части</div><div class="rw"><span>48.0 м² × 1 000 ₽</span><b class="num">48 000 ₽</b></div></div><div class="it"><div class="nm">Окно ПВХ 100 × 100 см</div><div class="rw"><span>2 шт × 8 000 ₽</span><b class="num">16 000 ₽</b></div></div><div class="it"><div class="nm">Окно ПВХ 60 × 90 см</div><div class="rw"><span>1 шт × 5 000 ₽</span><b class="num">5 000 ₽</b></div></div><div class="it"><div class="nm">Дверь входная металлическая</div><div class="rw"><span>1 шт × 14 300 ₽</span><b class="num">14 300 ₽</b></div></div><div class="it"><div class="nm">Свая винтовая 2500 × 89 мм</div><div class="rw"><span>20 шт × 6 500 ₽</span><b class="num">130 000 ₽</b></div></div><div class="it"><div class="nm">Кровля двускатная, профнастил оцинк.</div><div class="rw"><span>48.0 м² × 2 000 ₽</span><b class="num">96 000 ₽</b></div></div><div class="it"><div class="nm">Доставка, дистанция 60 км</div><div class="rw"><span>4 рейса × 17 200 ₽</span><b class="num">68 800 ₽</b></div></div><div class="it"><div class="nm">Сборка бригадой</div><div class="rw"><span>4 дня × 14 300 ₽</span><b class="num">57 200 ₽</b></div></div></div><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>8. С долей в стоимости</b><span>видно, что съедает бюджет: полоска и процент</span></div>
+    <div class="sheet v8"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><h2>Что входит</h2><table><tr><td>Жилая часть, каркас 50 × 50 мм, ОСБ<div class="calc">48.0 м² × 11 500 ₽</div><div class="track"><i style="width:55.9%"></i></div></td><td class="num">552 000 ₽<div class="pct">56%</div></td></tr><tr><td>Пол ОСБ 15 мм в жилой части<div class="calc">48.0 м² × 1 000 ₽</div><div class="track"><i style="width:4.9%"></i></div></td><td class="num">48 000 ₽<div class="pct">5%</div></td></tr><tr><td>Окно ПВХ 100 × 100 см<div class="calc">2 шт × 8 000 ₽</div><div class="track"><i style="width:1.6%"></i></div></td><td class="num">16 000 ₽<div class="pct">2%</div></td></tr><tr><td>Окно ПВХ 60 × 90 см<div class="calc">1 шт × 5 000 ₽</div><div class="track"><i style="width:0.5%"></i></div></td><td class="num">5 000 ₽<div class="pct">1%</div></td></tr><tr><td>Дверь входная металлическая<div class="calc">1 шт × 14 300 ₽</div><div class="track"><i style="width:1.4%"></i></div></td><td class="num">14 300 ₽<div class="pct">1%</div></td></tr><tr><td>Свая винтовая 2500 × 89 мм<div class="calc">20 шт × 6 500 ₽</div><div class="track"><i style="width:13.2%"></i></div></td><td class="num">130 000 ₽<div class="pct">13%</div></td></tr><tr><td>Кровля двускатная, профнастил оцинк.<div class="calc">48.0 м² × 2 000 ₽</div><div class="track"><i style="width:9.7%"></i></div></td><td class="num">96 000 ₽<div class="pct">10%</div></td></tr><tr><td>Доставка, дистанция 60 км<div class="calc">4 рейса × 17 200 ₽</div><div class="track"><i style="width:7.0%"></i></div></td><td class="num">68 800 ₽<div class="pct">7%</div></td></tr><tr><td>Сборка бригадой<div class="calc">4 дня × 14 300 ₽</div><div class="track"><i style="width:5.8%"></i></div></td><td class="num">57 200 ₽<div class="pct">6%</div></td></tr></table><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>9. Нумерация как в договоре</b><span>1.1, 1.2 — удобно ссылаться при спорах</span></div>
+    <div class="sheet v9"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><h2>Состав работ и материалов</h2><table><tr class="g"><td colspan="2">1. Дом и отделка</td></tr><tr><td><span class="no">1.1</span>Жилая часть, каркас 50 × 50 мм, ОСБ — 48.0 м² × 11 500 ₽</td><td class="num">552 000 ₽</td></tr><tr><td><span class="no">1.2</span>Пол ОСБ 15 мм в жилой части — 48.0 м² × 1 000 ₽</td><td class="num">48 000 ₽</td></tr><tr class="g"><td colspan="2">2. Окна и двери</td></tr><tr><td><span class="no">2.1</span>Окно ПВХ 100 × 100 см — 2 шт × 8 000 ₽</td><td class="num">16 000 ₽</td></tr><tr><td><span class="no">2.2</span>Окно ПВХ 60 × 90 см — 1 шт × 5 000 ₽</td><td class="num">5 000 ₽</td></tr><tr><td><span class="no">2.3</span>Дверь входная металлическая — 1 шт × 14 300 ₽</td><td class="num">14 300 ₽</td></tr><tr class="g"><td colspan="2">3. Фундамент и кровля</td></tr><tr><td><span class="no">3.1</span>Свая винтовая 2500 × 89 мм — 20 шт × 6 500 ₽</td><td class="num">130 000 ₽</td></tr><tr><td><span class="no">3.2</span>Кровля двускатная, профнастил оцинк. — 48.0 м² × 2 000 ₽</td><td class="num">96 000 ₽</td></tr><tr class="g"><td colspan="2">4. Доставка и сборка</td></tr><tr><td><span class="no">4.1</span>Доставка, дистанция 60 км — 4 рейса × 17 200 ₽</td><td class="num">68 800 ₽</td></tr><tr><td><span class="no">4.2</span>Сборка бригадой — 4 дня × 14 300 ₽</td><td class="num">57 200 ₽</td></tr></table><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>10. Карточками</b><span>каждая позиция плашкой, хорошо читается с телефона</span></div>
+    <div class="sheet v10"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><h2>Что входит</h2><div class="tiles"><div class="tile"><div class="nm">Жилая часть, каркас 50 × 50 мм, ОСБ</div><div class="sm">48.0 м² × 11 500 ₽</div><div class="vl num">552 000 ₽</div></div><div class="tile"><div class="nm">Пол ОСБ 15 мм в жилой части</div><div class="sm">48.0 м² × 1 000 ₽</div><div class="vl num">48 000 ₽</div></div><div class="tile"><div class="nm">Окно ПВХ 100 × 100 см</div><div class="sm">2 шт × 8 000 ₽</div><div class="vl num">16 000 ₽</div></div><div class="tile"><div class="nm">Окно ПВХ 60 × 90 см</div><div class="sm">1 шт × 5 000 ₽</div><div class="vl num">5 000 ₽</div></div><div class="tile"><div class="nm">Дверь входная металлическая</div><div class="sm">1 шт × 14 300 ₽</div><div class="vl num">14 300 ₽</div></div><div class="tile"><div class="nm">Свая винтовая 2500 × 89 мм</div><div class="sm">20 шт × 6 500 ₽</div><div class="vl num">130 000 ₽</div></div><div class="tile"><div class="nm">Кровля двускатная, профнастил оцинк.</div><div class="sm">48.0 м² × 2 000 ₽</div><div class="vl num">96 000 ₽</div></div><div class="tile"><div class="nm">Доставка, дистанция 60 км</div><div class="sm">4 рейса × 17 200 ₽</div><div class="vl num">68 800 ₽</div></div><div class="tile"><div class="nm">Сборка бригадой</div><div class="sm">4 дня × 14 300 ₽</div><div class="vl num">57 200 ₽</div></div></div><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>11. Зебра</b><span>через строку светлая заливка, суммы крупнее</span></div>
+    <div class="sheet v11"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><h2>Что входит</h2><table><tr><td>Жилая часть, каркас 50 × 50 мм, ОСБ<div class="calc">48.0 м² × 11 500 ₽</div></td><td class="num">552 000 ₽</td></tr><tr><td>Пол ОСБ 15 мм в жилой части<div class="calc">48.0 м² × 1 000 ₽</div></td><td class="num">48 000 ₽</td></tr><tr><td>Окно ПВХ 100 × 100 см<div class="calc">2 шт × 8 000 ₽</div></td><td class="num">16 000 ₽</td></tr><tr><td>Окно ПВХ 60 × 90 см<div class="calc">1 шт × 5 000 ₽</div></td><td class="num">5 000 ₽</td></tr><tr><td>Дверь входная металлическая<div class="calc">1 шт × 14 300 ₽</div></td><td class="num">14 300 ₽</td></tr><tr><td>Свая винтовая 2500 × 89 мм<div class="calc">20 шт × 6 500 ₽</div></td><td class="num">130 000 ₽</td></tr><tr><td>Кровля двускатная, профнастил оцинк.<div class="calc">48.0 м² × 2 000 ₽</div></td><td class="num">96 000 ₽</td></tr><tr><td>Доставка, дистанция 60 км<div class="calc">4 рейса × 17 200 ₽</div></td><td class="num">68 800 ₽</td></tr><tr><td>Сборка бригадой<div class="calc">4 дня × 14 300 ₽</div></td><td class="num">57 200 ₽</td></tr></table><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>12. Отдельная колонка единиц</b><span>штуки и метры вынесены — как в 1С</span></div>
+    <div class="sheet v12"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><table><colgroup><col><col class="c2"><col class="c3"><col class="c4"><col class="c5"></colgroup><tr><th>Наименование</th><th>Ед.</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr><tr><td>Жилая часть, каркас 50 × 50 мм, ОСБ</td><td class="num">м²</td><td class="num">48.0</td><td class="num">11 500 ₽</td><td class="num">552 000 ₽</td></tr><tr><td>Пол ОСБ 15 мм в жилой части</td><td class="num">м²</td><td class="num">48.0</td><td class="num">1 000 ₽</td><td class="num">48 000 ₽</td></tr><tr><td>Окно ПВХ 100 × 100 см</td><td class="num">шт</td><td class="num">2</td><td class="num">8 000 ₽</td><td class="num">16 000 ₽</td></tr><tr><td>Окно ПВХ 60 × 90 см</td><td class="num">шт</td><td class="num">1</td><td class="num">5 000 ₽</td><td class="num">5 000 ₽</td></tr><tr><td>Дверь входная металлическая</td><td class="num">шт</td><td class="num">1</td><td class="num">14 300 ₽</td><td class="num">14 300 ₽</td></tr><tr><td>Свая винтовая 2500 × 89 мм</td><td class="num">шт</td><td class="num">20</td><td class="num">6 500 ₽</td><td class="num">130 000 ₽</td></tr><tr><td>Кровля двускатная, профнастил оцинк.</td><td class="num">м²</td><td class="num">48.0</td><td class="num">2 000 ₽</td><td class="num">96 000 ₽</td></tr><tr><td>Доставка, дистанция 60 км</td><td class="num">рейса</td><td class="num">4</td><td class="num">17 200 ₽</td><td class="num">68 800 ₽</td></tr><tr><td>Сборка бригадой</td><td class="num">дня</td><td class="num">4</td><td class="num">14 300 ₽</td><td class="num">57 200 ₽</td></tr></table><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>13. Без линий</b><span>только воздух и выравнивание, самый спокойный</span></div>
+    <div class="sheet v13"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><h2>Что входит</h2><div class="air"><div class="ln"><div><div class="nm">Жилая часть, каркас 50 × 50 мм, ОСБ</div><div class="sm">48.0 м² × 11 500 ₽</div></div><b class="num">552 000 ₽</b></div><div class="ln"><div><div class="nm">Пол ОСБ 15 мм в жилой части</div><div class="sm">48.0 м² × 1 000 ₽</div></div><b class="num">48 000 ₽</b></div><div class="ln"><div><div class="nm">Окно ПВХ 100 × 100 см</div><div class="sm">2 шт × 8 000 ₽</div></div><b class="num">16 000 ₽</b></div><div class="ln"><div><div class="nm">Окно ПВХ 60 × 90 см</div><div class="sm">1 шт × 5 000 ₽</div></div><b class="num">5 000 ₽</b></div><div class="ln"><div><div class="nm">Дверь входная металлическая</div><div class="sm">1 шт × 14 300 ₽</div></div><b class="num">14 300 ₽</b></div><div class="ln"><div><div class="nm">Свая винтовая 2500 × 89 мм</div><div class="sm">20 шт × 6 500 ₽</div></div><b class="num">130 000 ₽</b></div><div class="ln"><div><div class="nm">Кровля двускатная, профнастил оцинк.</div><div class="sm">48.0 м² × 2 000 ₽</div></div><b class="num">96 000 ₽</b></div><div class="ln"><div><div class="nm">Доставка, дистанция 60 км</div><div class="sm">4 рейса × 17 200 ₽</div></div><b class="num">68 800 ₽</b></div><div class="ln"><div><div class="nm">Сборка бригадой</div><div class="sm">4 дня × 14 300 ₽</div></div><b class="num">57 200 ₽</b></div></div><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>14. Метки разделов слева</b><span>название раздела сбоку, позиции справа</span></div>
+    <div class="sheet v14"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><div class="blk"><div class="lab">Дом и отделка</div><div class="bd"><table><tr><td>Жилая часть, каркас 50 × 50 мм, ОСБ <span class="q">· 48.0 м² × 11 500 ₽</span></td><td class="num">552 000 ₽</td></tr><tr><td>Пол ОСБ 15 мм в жилой части <span class="q">· 48.0 м² × 1 000 ₽</span></td><td class="num">48 000 ₽</td></tr></table></div></div><div class="blk"><div class="lab">Окна и двери</div><div class="bd"><table><tr><td>Окно ПВХ 100 × 100 см <span class="q">· 2 шт × 8 000 ₽</span></td><td class="num">16 000 ₽</td></tr><tr><td>Окно ПВХ 60 × 90 см <span class="q">· 1 шт × 5 000 ₽</span></td><td class="num">5 000 ₽</td></tr><tr><td>Дверь входная металлическая <span class="q">· 1 шт × 14 300 ₽</span></td><td class="num">14 300 ₽</td></tr></table></div></div><div class="blk"><div class="lab">Фундамент и кровля</div><div class="bd"><table><tr><td>Свая винтовая 2500 × 89 мм <span class="q">· 20 шт × 6 500 ₽</span></td><td class="num">130 000 ₽</td></tr><tr><td>Кровля двускатная, профнастил оцинк. <span class="q">· 48.0 м² × 2 000 ₽</span></td><td class="num">96 000 ₽</td></tr></table></div></div><div class="blk"><div class="lab">Доставка и сборка</div><div class="bd"><table><tr><td>Доставка, дистанция 60 км <span class="q">· 4 рейса × 17 200 ₽</span></td><td class="num">68 800 ₽</td></tr><tr><td>Сборка бригадой <span class="q">· 4 дня × 14 300 ₽</span></td><td class="num">57 200 ₽</td></tr></table></div></div><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+  <div class="card">
+    <div class="tag"><b>15. Спецификация с кодами</b><span>артикул у каждой позиции — под заказ поставщику</span></div>
+    <div class="sheet v15"><div class="bar"><div class="logo">ДД</div><div><h1>Дачный садовый домик</h1><div class="sub">Коммерческое предложение · 29.08.2026</div></div></div><h2>Спецификация</h2><table><colgroup><col class="c0"><col><col class="c3"><col class="c4"></colgroup><tr><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Сумма</th></tr><tr><td class="code">ДОМ-01</td><td>Жилая часть, каркас 50 × 50 мм, ОСБ</td><td class="num">48.0 м²</td><td class="num">552 000 ₽</td></tr><tr><td class="code">ПОЛ-15</td><td>Пол ОСБ 15 мм в жилой части</td><td class="num">48.0 м²</td><td class="num">48 000 ₽</td></tr><tr><td class="code">ОКН-100</td><td>Окно ПВХ 100 × 100 см</td><td class="num">2 шт</td><td class="num">16 000 ₽</td></tr><tr><td class="code">ОКН-69</td><td>Окно ПВХ 60 × 90 см</td><td class="num">1 шт</td><td class="num">5 000 ₽</td></tr><tr><td class="code">ДВР-МТ</td><td>Дверь входная металлическая</td><td class="num">1 шт</td><td class="num">14 300 ₽</td></tr><tr><td class="code">СВА-25</td><td>Свая винтовая 2500 × 89 мм</td><td class="num">20 шт</td><td class="num">130 000 ₽</td></tr><tr><td class="code">КРВ-2С</td><td>Кровля двускатная, профнастил оцинк.</td><td class="num">48.0 м²</td><td class="num">96 000 ₽</td></tr><tr><td class="code">ЛОГ-Д</td><td>Доставка, дистанция 60 км</td><td class="num">4 рейса</td><td class="num">68 800 ₽</td></tr><tr><td class="code">ЛОГ-С</td><td>Сборка бригадой</td><td class="num">4 дня</td><td class="num">57 200 ₽</td></tr></table><div class="tot"><span>Итого</span><b class="num">987 300 ₽</b></div></div>
+  </div>
+</div>
