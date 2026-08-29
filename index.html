@@ -1964,7 +1964,7 @@
       ['Жилая', dims.liveArea ? dims.liveArea.toFixed(1) + ' м²' : '—'],
       ['Терраса', dims.terrArea ? dims.terrArea.toFixed(1) + ' м²' : '—'],
       ['Каркас', FRAME_NAMES[frame0]],
-      ['Отделка внутри', FINISH_NAMES[$('finish').value]]
+      ['Отделка', FINISH_NAMES[$('finish').value]]
     ];
     const specHtml = spec.map(r =>
       '<div class="srow"><span>' + r[0] + '</span><b>' + esc(r[1]) + '</b></div>').join('');
@@ -2039,12 +2039,11 @@
       '.plan img { position: absolute; inset: 0; width: 100%; height: 100%;' +
       ' object-fit: contain; transform-origin: center; }' +
       // характеристики в две колонки
-      '.spec { margin-top: 10mm; display: grid; grid-template-columns: 1fr 1fr;' +
-      ' column-gap: 12mm; }' +
+      '.spec { margin-top: 9mm; }' +
       '.srow { display: flex; justify-content: space-between; align-items: baseline;' +
       ' gap: 8pt; padding: 8pt 0; border-bottom: 1px solid #eef1ee; }' +
-      '.srow span { font-size: 16pt; color: #6b7a72; }' +
-      '.srow b { font-size: 16.5pt; font-weight: 600; }' +
+      '.srow span { font-size: 16pt; color: #6b7a72; white-space: nowrap; }' +
+      '.srow b { font-size: 16.5pt; font-weight: 600; text-align: right; }' +
       '.pfoot { margin-top: auto; padding-top: 7mm; border-top: 1px solid #e8ece9;' +
       ' display: flex; justify-content: space-between; align-items: baseline;' +
       ' font-size: 12pt; color: #8a968f; }' +
