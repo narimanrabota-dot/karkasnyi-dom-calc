@@ -1502,7 +1502,7 @@
     }
 
     saveForm();
-    if (lastQuote) calculate();
+    calculate(true);   // смета всегда на экране, пока хватает данных
   }
 
   // собирает смету из того, что сейчас стоит в форме. Ничего не рисует.
@@ -1600,15 +1600,21 @@
     toast('Расчёт сброшен к базовой комплектации');
   }
 
-  function calculate() {
+  // silent — расчёт идёт сам по ходу набора: пока данных мало, просто ничего не показываем.
+  // по нажатию кнопки (silent = false) объясняем, чего не хватает
+  function calculate(silent) {
     const box = $('resultBox');
     const q = buildQuote();
 
     if (q.error) {
       lastQuote = null;
-      box.innerHTML = '<div class="result error">' + q.error + '</div>';
+      box.innerHTML = silent ? '' : '<div class="result error">' + q.error + '</div>';
       return;
     }
+
+    // имя клиента могло быть уже вписано — не затираем его при пересборке
+    const keepClient = $('clientName') ? $('clientName').value : '';
+    const clientFocused = document.activeElement && document.activeElement.id === 'clientName';
 
     const lines = q.lines, total = q.total, note = q.note;
     lastQuote = { input: q.input, breakdown: { lines: lines, note: note }, total: total };
@@ -1621,6 +1627,9 @@
       '<button id="saveBtn">Сохранить смету</button>' +
       '<button id="pdfBtn">Скачать КП</button></div>' +
       '<div id="saveMsg"></div>';
+
+    if (keepClient) $('clientName').value = keepClient;
+    if (clientFocused) $('clientName').focus();
   }
 
   // коммерческое предложение листом А4: состав и цена.
@@ -2427,7 +2436,7 @@
       refreshAll();
     });
 
-    $('calcBtn').addEventListener('click', calculate);
+    $('calcBtn').addEventListener('click', () => calculate(false));
     $('resetBtn').addEventListener('click', resetForm);
 
     // «finish» живёт внутри блока опций — там уже есть общий обработчик
@@ -2435,7 +2444,7 @@
       $(id).addEventListener('change', refreshAll));
     ['liveA', 'liveB', 'terrA', 'terrB', 'distance'].forEach(id => {
       $(id).addEventListener('input', refreshAll);
-      $(id).addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+      $(id).addEventListener('keydown', e => { if (e.key === 'Enter') calculate(false); });
     });
 
     document.addEventListener('click', e => {
