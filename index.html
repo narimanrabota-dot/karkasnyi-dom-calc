@@ -1945,22 +1945,36 @@
     const d = new Date();
     const date = d.toLocaleDateString('ru-RU');
 
-    // Дороже всего клиента пугает доставка. В КП показываем её вчетверо меньше,
-    // а спрятанную часть добавляем к жилой части. Итог при этом не меняется.
-    // Менеджер в калькуляторе видит настоящие цифры — здесь только вид для клиента
-    const DELIVERY_SHOWN = 1 / 4;
+    // Дорогая логистика пугает клиента. В КП показываем доставку и сборку вчетверо
+    // меньше, а доставку свай прячем целиком в цену свай. Спрятанное уходит
+    // в жилую часть. Итог не меняется — сумма строк по-прежнему сходится.
+    // Менеджер в калькуляторе видит настоящие цифры, подмена только здесь
+    const SHOWN_PART = 1 / 4;
     const clientLines = () => {
       const src = lastQuote.breakdown.lines.map(l => Object.assign({}, l));
-      const del = src.find(l => l.g === 'Доставка и сборка' && l.t.indexOf('Доставка') === 0);
-      if (!del || !del.v) return src;
       const host = src.find(l => l.t.indexOf('Жилая часть') === 0) ||
                    src.find(l => l.t.indexOf('Терраса') === 0);
       if (!host) return src;                       // прятать некуда — оставляем как есть
-      const shown = Math.round(del.v * DELIVERY_SHOWN);
-      host.v += del.v - shown;
-      del.v = shown;
-      del.p = '';                                  // цена за рейс больше не сойдётся — убираем
-      host.p = '';                                 // и у жилой части цена за метр тоже
+      let hidden = 0;
+
+      // доставка и сборка — показываем четверть
+      src.forEach(l => {
+        if (l.g !== 'Доставка и сборка' || !l.v) return;
+        const shown = Math.round(l.v * SHOWN_PART);
+        hidden += l.v - shown;
+        l.v = shown;
+        l.p = '';                                  // цена за рейс уже не сойдётся
+      });
+
+      // доставка свай — убираем строкой, сумма уходит в сами сваи
+      const kmIdx = src.findIndex(l => l.t.indexOf('Доставка свай') === 0);
+      if (kmIdx !== -1) {
+        const pile = src.find(l => l.t.indexOf('Свая') === 0 || l.t.indexOf('Бетонные блоки') === 0);
+        if (pile) { pile.v += src[kmIdx].v; pile.p = ''; src.splice(kmIdx, 1); }
+      }
+
+      host.v += hidden;
+      host.p = '';
       return src;
     };
 
