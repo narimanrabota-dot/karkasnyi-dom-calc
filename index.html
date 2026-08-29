@@ -550,6 +550,37 @@
     }
     .resetbtn:hover { color: var(--ink); background: var(--field); }
 
+    /* ---------- на телефоне мелкий текст не прочитать ---------- */
+    @media (max-width: 620px) {
+      body { font-size: 16px; }
+      .hint,
+      .sub,
+      .price,
+      .result-line,
+      .opt-row > span:first-child,
+      .ah .ell { font-size: 14.5px; }
+      .result-row { font-size: 15.5px; padding: 7px 0; }
+      .ah .name { font-size: 16px; }
+      .ah .sum { font-size: 14.5px; }
+      .opt-sum { font-size: 15px; }
+      .opt-sum b { font-size: 18px; }
+      .result-total { font-size: 32px; }
+      .topbar .who { font-size: 14px; }
+      .topbar .who b { font-size: 15px; }
+      label { font-size: 15px; }
+      .area-summary { font-size: 14.5px; }
+      .area-summary b { font-size: 17px; }
+      .stepper .val { font-size: 15px; }
+      select.mini, input.num { font-size: 15px; height: 36px; }
+      .linkbtn { font-size: 14.5px; }
+      .resetbtn { font-size: 14px; }
+      .save-box button { font-size: 15px; }
+      .modal-sub { font-size: 14px; }
+      .photo-load, .photo-del { font-size: 14px; }
+      .photos { grid-template-columns: 1fr 1fr; }
+      .photo-slot.wide { grid-column: 1 / -1; }
+    }
+
     .spinner { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 40px 0; }
   </style>
 </head>
