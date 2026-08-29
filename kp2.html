@@ -1,0 +1,239 @@
+<meta charset="utf-8">
+<title>КП — ещё 5 вариантов</title>
+<style>
+  :root { --ink:#1d2b24; --soft:#6b7a72; --line:#e8ece9; --green:#2f5044; --dark:#1c332a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#eef1ee; font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:var(--ink); padding:28px 16px 60px; }
+  .head { max-width:900px; margin:0 auto 26px; }
+  .head h1 { font-size:22px; font-weight:600; letter-spacing:-.3px; }
+  .head p { margin-top:6px; color:var(--soft); font-size:14px; }
+  .wrap { max-width:900px; margin:0 auto; }
+  .card { margin-bottom:34px; }
+  .tag { display:flex; align-items:baseline; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .tag b { font-size:15px; font-weight:600; }
+  .tag span { font-size:13px; color:var(--soft); }
+  .sheet {
+    width:100%; max-width:794px; aspect-ratio:210/297;
+    background:#fff; border-radius:4px; box-shadow:0 6px 26px rgba(20,40,32,.13);
+    overflow:hidden; font-size:11px; line-height:1.5;
+  }
+  table { width:100%; border-collapse:collapse; }
+  td { padding:5px 0; vertical-align:top; }
+  td:last-child { text-align:right; white-space:nowrap; padding-left:14px; font-variant-numeric:tabular-nums; }
+  h2 { font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:1.2px; color:#8a968f; }
+
+  /* 6 — зелёная шапка внутри рамки */
+  .v6 { padding:26px; }
+  .v6 .frame { border:1.5px solid var(--green); height:100%; display:flex; flex-direction:column; }
+  .v6 .bar { background:var(--green); color:#fff; padding:22px 28px 20px; }
+  .v6 .bar h1 { font-size:18px; font-weight:600; letter-spacing:-.3px; }
+  .v6 .bar .sub { margin-top:4px; font-size:10px; opacity:.82; letter-spacing:.4px; }
+  .v6 .body { padding:22px 28px 26px; flex:1; }
+  .v6 td { border-bottom:1px solid var(--line); }
+  .v6 .total { margin-top:18px; padding-top:13px; border-top:1.5px solid var(--green);
+               display:flex; justify-content:space-between; align-items:baseline; }
+  .v6 .total span { font-size:11px; font-weight:600; }
+  .v6 .total b { font-size:23px; font-weight:700; letter-spacing:-.7px; color:var(--green); }
+  .v6 .note { margin-top:16px; font-size:9.5px; color:var(--soft); }
+
+  /* 7 — тонкая линия сверху, строгий бланк */
+  .v7 { padding:40px 38px; border-top:6px solid var(--green); }
+  .v7 .top { display:flex; justify-content:space-between; align-items:flex-start;
+             padding-bottom:16px; border-bottom:1px solid var(--ink); }
+  .v7 h1 { font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; }
+  .v7 .sub { margin-top:4px; font-size:10px; color:var(--soft); letter-spacing:.4px; }
+  .v7 .date { font-size:10px; color:var(--soft); text-align:right; line-height:1.7; }
+  .v7 h2 { margin-top:22px; }
+  .v7 td { border-bottom:1px solid #f0f2f0; }
+  .v7 .total { margin-top:18px; padding-top:12px; border-top:2px solid var(--ink);
+               display:flex; justify-content:space-between; align-items:baseline; }
+  .v7 .total span { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; }
+  .v7 .total b { font-size:22px; font-weight:700; letter-spacing:-.6px; }
+  .v7 .note { margin-top:16px; font-size:9.5px; color:var(--soft); }
+
+  /* 8 — плашка с инициалом, подпись снизу */
+  .v8 { padding:0; display:flex; flex-direction:column; }
+  .v8 .bar { display:flex; align-items:center; gap:14px; padding:26px 38px 22px; border-bottom:1px solid var(--line); }
+  .v8 .logo { width:42px; height:42px; flex:0 0 auto; border-radius:10px; background:var(--green);
+              color:#fff; display:flex; align-items:center; justify-content:center;
+              font-size:18px; font-weight:700; letter-spacing:-.5px; }
+  .v8 h1 { font-size:17px; font-weight:600; letter-spacing:-.3px; }
+  .v8 .sub { margin-top:2px; font-size:10px; color:var(--soft); }
+  .v8 .body { padding:22px 38px; flex:1; }
+  .v8 td { border-bottom:1px solid var(--line); }
+  .v8 .total { margin-top:18px; padding:14px 16px; background:var(--green); color:#fff;
+               border-radius:8px; display:flex; justify-content:space-between; align-items:baseline; }
+  .v8 .total span { font-size:11px; font-weight:600; opacity:.85; }
+  .v8 .total b { font-size:22px; font-weight:700; letter-spacing:-.6px; }
+  .v8 .foot { padding:16px 38px 26px; border-top:1px solid var(--line); font-size:9.5px; color:var(--soft); }
+
+  /* 9 — двойная рамка */
+  .v9 { padding:22px; }
+  .v9 .outer { border:3px solid var(--green); height:100%; padding:7px; }
+  .v9 .inner { border:1px solid var(--green); height:100%; padding:26px 28px; }
+  .v9 .top { text-align:center; padding-bottom:14px; border-bottom:1px solid var(--line); }
+  .v9 h1 { font-size:17px; font-weight:700; text-transform:uppercase; letter-spacing:1.4px; color:var(--green); }
+  .v9 .sub { margin-top:5px; font-size:9.5px; color:var(--soft); text-transform:uppercase; letter-spacing:1.6px; }
+  .v9 .date { margin-top:4px; font-size:10px; color:var(--soft); }
+  .v9 h2 { margin-top:20px; text-align:center; }
+  .v9 td { border-bottom:1px dotted #dde3df; }
+  .v9 .total { margin-top:18px; padding-top:12px; border-top:1.5px solid var(--green);
+               display:flex; justify-content:space-between; align-items:baseline; }
+  .v9 .total span { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; }
+  .v9 .total b { font-size:22px; font-weight:700; color:var(--green); letter-spacing:-.6px; }
+  .v9 .note { margin-top:14px; font-size:9.5px; color:var(--soft); text-align:center; }
+
+  /* 10 — тёмная шапка, угловые метки */
+  .v10 { padding:0; display:flex; flex-direction:column; }
+  .v10 .bar { background:var(--dark); color:#fff; padding:34px 38px 30px; }
+  .v10 .bar .sub { font-size:9px; text-transform:uppercase; letter-spacing:2px; opacity:.6; }
+  .v10 .bar h1 { margin-top:8px; font-size:21px; font-weight:600; letter-spacing:-.4px; }
+  .v10 .bar .date { margin-top:8px; font-size:10px; opacity:.7; }
+  .v10 .body { padding:24px 38px; flex:1; position:relative; }
+  .v10 .body::before, .v10 .body::after { content:''; position:absolute; width:16px; height:16px; }
+  .v10 .body::before { left:22px; bottom:14px; border-left:1.5px solid var(--green); border-bottom:1.5px solid var(--green); }
+  .v10 .body::after { right:22px; bottom:14px; border-right:1.5px solid var(--green); border-bottom:1.5px solid var(--green); }
+  .v10 td { border-bottom:1px solid var(--line); }
+  .v10 .total { margin-top:20px; padding-top:14px; border-top:2px solid var(--dark);
+                display:flex; justify-content:space-between; align-items:baseline; }
+  .v10 .total span { font-size:11px; font-weight:600; }
+  .v10 .total b { font-size:25px; font-weight:700; letter-spacing:-.8px; }
+  .v10 .note { margin-top:16px; font-size:9.5px; color:var(--soft); }
+</style>
+
+<div class="head">
+  <h1>Ещё 5 вариантов — в духе второго и пятого</h1>
+  <p>Фирменная плашка и вид официального бланка. Скажи номер — поставлю на сайт.</p>
+</div>
+
+<div class="wrap">
+
+  <div class="card">
+    <div class="tag"><b>6. Шапка в рамке</b><span>прямой гибрид 2 и 5: зелёная плашка внутри рамки по краю листа</span></div>
+    <div class="sheet v6">
+      <div class="frame">
+        <div class="bar">
+          <h1>Дачный садовый домик</h1>
+          <div class="sub">КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ · 29.08.2026</div>
+        </div>
+        <div class="body">
+          <h2>Что входит</h2>
+          <table>
+            <tr><td>Жилая часть: 48.0 м² × 11 500 ₽</td><td>552 000 ₽</td></tr>
+            <tr><td>Доставка: 4 × 17 200 ₽</td><td>68 800 ₽</td></tr>
+            <tr><td>Сборка: 4 × 14 300 ₽</td><td>57 200 ₽</td></tr>
+            <tr><td>Двери: 1 шт</td><td>14 300 ₽</td></tr>
+            <tr><td>Сваи 2500 × 89 мм: 20 × 6 500 ₽</td><td>130 000 ₽</td></tr>
+            <tr><td>Доставка свай: 60 км × 200 ₽</td><td>12 000 ₽</td></tr>
+            <tr><td>Двускатная крыша: 48.0 м² × 2 000 ₽</td><td>96 000 ₽</td></tr>
+          </table>
+          <div class="total"><span>Итого</span><b>930 300 ₽</b></div>
+          <div class="note">Домик 6×8 м, всего 48.0 м². Каркас 50 × 50 мм, отделка ОСБ. Кровля профнастил оцинкованный, 2-скатная. Фундамент сваи 2500 × 89 мм. 4 доставки и 4 сборки, дистанция 60 км.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tag"><b>7. Зелёный кант</b><span>полоса фирменного цвета по верхнему краю, дальше строгий бланк</span></div>
+    <div class="sheet v7">
+      <div class="top">
+        <div>
+          <h1>Дачный садовый домик</h1>
+          <div class="sub">Коммерческое предложение</div>
+        </div>
+        <div class="date">29.08.2026<br>дистанция 60 км</div>
+      </div>
+      <h2>Состав и стоимость</h2>
+      <table>
+        <tr><td>Жилая часть: 48.0 м² × 11 500 ₽</td><td>552 000 ₽</td></tr>
+        <tr><td>Доставка: 4 × 17 200 ₽</td><td>68 800 ₽</td></tr>
+        <tr><td>Сборка: 4 × 14 300 ₽</td><td>57 200 ₽</td></tr>
+        <tr><td>Двери: 1 шт</td><td>14 300 ₽</td></tr>
+        <tr><td>Сваи 2500 × 89 мм: 20 × 6 500 ₽</td><td>130 000 ₽</td></tr>
+        <tr><td>Доставка свай: 60 км × 200 ₽</td><td>12 000 ₽</td></tr>
+        <tr><td>Двускатная крыша: 48.0 м² × 2 000 ₽</td><td>96 000 ₽</td></tr>
+      </table>
+      <div class="total"><span>Итого</span><b>930 300 ₽</b></div>
+      <div class="note">Каркас 50 × 50 мм, отделка ОСБ. Кровля профнастил оцинкованный, 2-скатная. Фундамент сваи 2500 × 89 мм. Предложение носит справочный характер, окончательная стоимость подтверждается договором.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tag"><b>8. Со знаком</b><span>квадратный фирменный знак в шапке, итог зелёной плашкой</span></div>
+    <div class="sheet v8">
+      <div class="bar">
+        <div class="logo">ДД</div>
+        <div>
+          <h1>Дачный садовый домик</h1>
+          <div class="sub">Коммерческое предложение · 29.08.2026</div>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Что входит</h2>
+        <table>
+          <tr><td>Жилая часть: 48.0 м² × 11 500 ₽</td><td>552 000 ₽</td></tr>
+          <tr><td>Доставка: 4 × 17 200 ₽</td><td>68 800 ₽</td></tr>
+          <tr><td>Сборка: 4 × 14 300 ₽</td><td>57 200 ₽</td></tr>
+          <tr><td>Двери: 1 шт</td><td>14 300 ₽</td></tr>
+          <tr><td>Сваи 2500 × 89 мм: 20 × 6 500 ₽</td><td>130 000 ₽</td></tr>
+          <tr><td>Доставка свай: 60 км × 200 ₽</td><td>12 000 ₽</td></tr>
+          <tr><td>Двускатная крыша: 48.0 м² × 2 000 ₽</td><td>96 000 ₽</td></tr>
+        </table>
+        <div class="total"><span>Итого</span><b>930 300 ₽</b></div>
+      </div>
+      <div class="foot">Домик 6×8 м, всего 48.0 м². Каркас 50 × 50 мм, отделка ОСБ. Кровля профнастил оцинкованный, 2-скатная. Фундамент сваи 2500 × 89 мм. Предложение носит справочный характер.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tag"><b>9. Двойная рамка</b><span>самый «документальный»: две рамки, заголовок по центру заглавными</span></div>
+    <div class="sheet v9">
+      <div class="outer"><div class="inner">
+        <div class="top">
+          <h1>Дачный садовый домик</h1>
+          <div class="sub">Коммерческое предложение</div>
+          <div class="date">29.08.2026 · дистанция 60 км</div>
+        </div>
+        <h2>Состав и стоимость</h2>
+        <table>
+          <tr><td>Жилая часть: 48.0 м² × 11 500 ₽</td><td>552 000 ₽</td></tr>
+          <tr><td>Доставка: 4 × 17 200 ₽</td><td>68 800 ₽</td></tr>
+          <tr><td>Сборка: 4 × 14 300 ₽</td><td>57 200 ₽</td></tr>
+          <tr><td>Двери: 1 шт</td><td>14 300 ₽</td></tr>
+          <tr><td>Сваи 2500 × 89 мм: 20 × 6 500 ₽</td><td>130 000 ₽</td></tr>
+          <tr><td>Доставка свай: 60 км × 200 ₽</td><td>12 000 ₽</td></tr>
+          <tr><td>Двускатная крыша: 48.0 м² × 2 000 ₽</td><td>96 000 ₽</td></tr>
+        </table>
+        <div class="total"><span>Итого</span><b>930 300 ₽</b></div>
+        <div class="note">Каркас 50 × 50 мм, отделка ОСБ. Кровля профнастил оцинкованный, 2-скатная. Фундамент сваи 2500 × 89 мм.</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tag"><b>10. Тёмная шапка</b><span>глубокая заливка сверху, угловые метки снизу — дорого и сдержанно</span></div>
+    <div class="sheet v10">
+      <div class="bar">
+        <div class="sub">Коммерческое предложение</div>
+        <h1>Дачный садовый домик</h1>
+        <div class="date">29.08.2026 · 6 × 8 м · дистанция 60 км</div>
+      </div>
+      <div class="body">
+        <h2>Что входит</h2>
+        <table>
+          <tr><td>Жилая часть: 48.0 м² × 11 500 ₽</td><td>552 000 ₽</td></tr>
+          <tr><td>Доставка: 4 × 17 200 ₽</td><td>68 800 ₽</td></tr>
+          <tr><td>Сборка: 4 × 14 300 ₽</td><td>57 200 ₽</td></tr>
+          <tr><td>Двери: 1 шт</td><td>14 300 ₽</td></tr>
+          <tr><td>Сваи 2500 × 89 мм: 20 × 6 500 ₽</td><td>130 000 ₽</td></tr>
+          <tr><td>Доставка свай: 60 км × 200 ₽</td><td>12 000 ₽</td></tr>
+          <tr><td>Двускатная крыша: 48.0 м² × 2 000 ₽</td><td>96 000 ₽</td></tr>
+        </table>
+        <div class="total"><span>Итого</span><b>930 300 ₽</b></div>
+        <div class="note">Каркас 50 × 50 мм, отделка ОСБ. Кровля профнастил оцинкованный, 2-скатная. Фундамент сваи 2500 × 89 мм. Предложение носит справочный характер.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
