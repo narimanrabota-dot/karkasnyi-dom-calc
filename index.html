@@ -1682,10 +1682,15 @@
     doc.open(); doc.write(html); doc.close();
 
     const go = () => {
-      frame.contentWindow.focus();
-      frame.contentWindow.print();
-      // окно печати блокирует поток; убираем рамку, когда его закрыли
-      setTimeout(() => frame.remove(), 1000);
+      const w = frame.contentWindow;
+      let done = false;
+      const cleanup = () => { if (done) return; done = true; frame.remove(); };
+      // убираем рамку только после того, как окно печати закрыли —
+      // иначе лист исчезнет прямо из-под диалога
+      w.addEventListener('afterprint', cleanup);
+      setTimeout(cleanup, 120000);   // страховка, если событие не придёт
+      w.focus();
+      w.print();
     };
     if (doc.readyState === 'complete') go();
     else frame.onload = go;
