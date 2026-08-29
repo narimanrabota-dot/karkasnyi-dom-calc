@@ -491,6 +491,28 @@
     .addbtn.danger { color: var(--warn-ink); }
     .addbtn.danger:hover { border-color: var(--warn-ink); background: var(--warn-bg); }
 
+    /* ---------- фото дома и планировка для КП ---------- */
+    .photos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+    .photo-frame {
+      position: relative; width: 100%; aspect-ratio: 210 / 297;
+      border: 1.5px dashed #ccd4cf; border-radius: 10px;
+      background: var(--field); overflow: hidden; cursor: default;
+    }
+    .photo-frame.has { border-style: solid; border-color: var(--line); cursor: grab; }
+    .photo-frame.has:active { cursor: grabbing; }
+    .photo-frame img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; transform-origin: center; user-select: none; -webkit-user-drag: none;
+    }
+    .photo-empty {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      text-align: center; font-size: 12px; line-height: 1.4; color: #a2ada7;
+    }
+    .photo-acts { display: flex; align-items: baseline; gap: 8px; margin-top: 7px; flex-wrap: wrap; }
+    .photo-load { font-size: 12.5px; color: var(--green); }
+    .photo-del { font-size: 12px; color: var(--ink-soft); }
+    .photo-zoom { width: 100%; margin-top: 6px; accent-color: var(--green); }
+
     .resetbtn {
       display: block; margin: 12px auto 0;
       font-size: 12.5px; color: var(--ink-soft);
@@ -620,6 +642,32 @@
       </div>
 
       <div class="options" id="options"></div>
+
+      <div class="photos">
+        <div class="photo-slot" data-slot="dom">
+          <div class="photo-frame" id="frameDom">
+            <img alt="" hidden>
+            <div class="photo-empty">Загрузите<br>фото дома</div>
+          </div>
+          <div class="photo-acts">
+            <button class="linkbtn photo-load" data-load="dom">Загрузить фото дома</button>
+            <button class="linkbtn photo-del" data-del-photo="dom" hidden>убрать</button>
+          </div>
+          <input type="range" class="photo-zoom" data-zoom="dom" min="100" max="300" value="100" hidden>
+        </div>
+        <div class="photo-slot" data-slot="plan">
+          <div class="photo-frame" id="framePlan">
+            <img alt="" hidden>
+            <div class="photo-empty">Загрузите<br>планировку</div>
+          </div>
+          <div class="photo-acts">
+            <button class="linkbtn photo-load" data-load="plan">Загрузить планировку</button>
+            <button class="linkbtn photo-del" data-del-photo="plan" hidden>убрать</button>
+          </div>
+          <input type="range" class="photo-zoom" data-zoom="plan" min="100" max="300" value="100" hidden>
+        </div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" hidden>
 
       <button class="primary" id="calcBtn" style="margin-top:16px">Рассчитать</button>
       <button class="linkbtn resetbtn" id="resetBtn">сбросить к базовой комплектации</button>
@@ -1585,6 +1633,8 @@
     if (!confirm('Сбросить расчёт к базовой комплектации?\n\nВсё набранное будет потеряно.')) return;
 
     try { localStorage.removeItem(FORM_KEY); } catch (e) { /* не критично */ }
+    newCalcId();   // новый клиент — новые картинки
+    renderPhotos();
     foundManual = null;
     foundEditing = false;
     lastQuote = null;
@@ -1626,6 +1676,199 @@
 
   }
 
+  // ============================================================
+  //  ФОТО ДОМА И ПЛАНИРОВКА ДЛЯ КП
+  // ============================================================
+
+  // каждому расчёту — свои картинки. Ключ живёт рядом с расчётом
+  // и меняется при сбросе, чтобы фото прошлого клиента не всплыло у следующего
+  const CALC_ID_KEY = 'kdc_calc_id';
+  function calcId() {
+    let id;
+    try { id = localStorage.getItem(CALC_ID_KEY); } catch (e) { id = null; }
+    if (!id) {
+      id = 'c' + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem(CALC_ID_KEY, id); } catch (e) { /* приватный режим */ }
+    }
+    return id;
+  }
+  function newCalcId() {
+    ['dom', 'plan'].forEach(slot => {
+      try {
+        localStorage.removeItem(photoKey(slot));
+        localStorage.removeItem(cropKey(slot));
+      } catch (e) { /* нечего убирать */ }
+    });
+    try { localStorage.setItem(CALC_ID_KEY, 'c' + Math.random().toString(36).slice(2, 10)); }
+    catch (e) { /* приватный режим */ }
+  }
+  const photoKey = slot => 'kdc_photo_' + slot + '_' + calcId();
+  const cropKey  = slot => 'kdc_crop_'  + slot + '_' + calcId();
+
+  const PHOTO_SLOTS = { dom: 'фото дома', plan: 'планировку' };
+  const CROP_DEFAULT = { s: 1, x: 0, y: 0 };   // масштаб и смещение в процентах
+
+  function getPhoto(slot) {
+    try { return localStorage.getItem(photoKey(slot)); } catch (e) { return null; }
+  }
+  function getCrop(slot) {
+    try {
+      const raw = localStorage.getItem(cropKey(slot));
+      const c = raw ? JSON.parse(raw) : null;
+      return c && typeof c.s === 'number' ? c : Object.assign({}, CROP_DEFAULT);
+    } catch (e) { return Object.assign({}, CROP_DEFAULT); }
+  }
+  function setCrop(slot, c) {
+    try { localStorage.setItem(cropKey(slot), JSON.stringify(c)); } catch (e) { /* не критично */ }
+  }
+
+  // смещение держим в процентах, чтобы кадр не съезжал на другом экране и в печати
+  const cropCss = c => 'transform: translate(' + c.x + '%, ' + c.y + '%) scale(' + c.s + ');';
+
+  // ужимаем до 1600 px и пересжимаем в JPEG — иначе память браузера переполнится.
+  // createImageBitmap с imageOrientation разворачивает фото с телефона по EXIF
+  async function shrinkImage(file) {
+    const MAX = 1600;
+    let src;
+    try {
+      src = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch (e) {
+      src = await new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = () => rej(new Error('Не удалось прочитать изображение'));
+        img.src = URL.createObjectURL(file);
+      });
+    }
+    const w = src.width, h = src.height;
+    if (!w || !h) throw new Error('Не удалось прочитать изображение');
+    const k = Math.min(1, MAX / Math.max(w, h));
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(w * k);
+    cv.height = Math.round(h * k);
+    cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
+    if (src.close) src.close();
+    return cv.toDataURL('image/jpeg', 0.85);
+  }
+
+  let photoTarget = null;
+
+  async function loadPhoto(slot, file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) {
+      alert('Нужна картинка — jpg, png или webp. Этот файл не подходит.');
+      return;
+    }
+    try {
+      const data = await shrinkImage(file);
+      try { localStorage.setItem(photoKey(slot), data); }
+      catch (e) { alert('Фото слишком большое, выберите другое.'); return; }
+      setCrop(slot, Object.assign({}, CROP_DEFAULT));
+      renderPhoto(slot);
+      toast(slot === 'dom' ? 'Фото дома загружено' : 'Планировка загружена');
+    } catch (e) {
+      alert('Не удалось прочитать файл: ' + e.message);
+    }
+  }
+
+  function renderPhoto(slot) {
+    const wrap = document.querySelector('.photo-slot[data-slot="' + slot + '"]');
+    if (!wrap) return;
+    const frame = wrap.querySelector('.photo-frame');
+    const img = frame.querySelector('img');
+    const empty = frame.querySelector('.photo-empty');
+    const del = wrap.querySelector('[data-del-photo]');
+    const zoom = wrap.querySelector('.photo-zoom');
+    const data = getPhoto(slot);
+
+    if (!data) {
+      img.hidden = true; img.removeAttribute('src');
+      empty.hidden = false; del.hidden = true; zoom.hidden = true;
+      frame.classList.remove('has');
+      return;
+    }
+    const c = getCrop(slot);
+    img.src = data; img.hidden = false;
+    img.style.cssText = cropCss(c);
+    empty.hidden = true; del.hidden = false; zoom.hidden = false;
+    zoom.value = Math.round(c.s * 100);
+    frame.classList.add('has');
+  }
+
+  function renderPhotos() { Object.keys(PHOTO_SLOTS).forEach(renderPhoto); }
+
+  function bindPhotos() {
+    const input = $('photoInput');
+
+    document.addEventListener('click', e => {
+      const load = e.target.closest('[data-load]');
+      if (load) { photoTarget = load.dataset.load; input.value = ''; input.click(); return; }
+      const del = e.target.closest('[data-del-photo]');
+      if (del) {
+        const slot = del.dataset.delPhoto;
+        try { localStorage.removeItem(photoKey(slot)); localStorage.removeItem(cropKey(slot)); }
+        catch (err) { /* нечего убирать */ }
+        renderPhoto(slot);
+      }
+    });
+
+    input.addEventListener('change', () => {
+      if (photoTarget) loadPhoto(photoTarget, input.files && input.files[0]);
+    });
+
+    document.addEventListener('input', e => {
+      const z = e.target.closest('[data-zoom]');
+      if (!z) return;
+      const slot = z.dataset.zoom;
+      const c = getCrop(slot);
+      c.s = Math.max(1, Number(z.value) / 100);
+      setCrop(slot, c);
+      renderPhoto(slot);
+    });
+
+    // тянем картинку мышкой или пальцем — двигаем кадр
+    document.querySelectorAll('.photo-frame').forEach(frame => {
+      const slot = frame.closest('.photo-slot').dataset.slot;
+      let dragging = false, sx = 0, sy = 0, start = null;
+
+      const point = e => e.touches && e.touches[0] ? e.touches[0] : e;
+
+      const down = e => {
+        if (!getPhoto(slot)) return;
+        dragging = true;
+        const p = point(e);
+        sx = p.clientX; sy = p.clientY;
+        start = getCrop(slot);
+        e.preventDefault();
+      };
+      const move = e => {
+        if (!dragging) return;
+        const p = point(e);
+        const r = frame.getBoundingClientRect();
+        const c = {
+          s: start.s,
+          x: Math.max(-50, Math.min(50, start.x + (p.clientX - sx) / r.width * 100)),
+          y: Math.max(-50, Math.min(50, start.y + (p.clientY - sy) / r.height * 100))
+        };
+        frame.querySelector('img').style.cssText = cropCss(c);
+        frame._crop = c;
+        e.preventDefault();
+      };
+      const up = () => {
+        if (!dragging) return;
+        dragging = false;
+        if (frame._crop) { setCrop(slot, frame._crop); frame._crop = null; }
+      };
+
+      frame.addEventListener('mousedown', down);
+      frame.addEventListener('touchstart', down, { passive: false });
+      window.addEventListener('mousemove', move);
+      window.addEventListener('touchmove', move, { passive: false });
+      window.addEventListener('mouseup', up);
+      window.addEventListener('touchend', up);
+    });
+  }
+
   // коммерческое предложение листом А4: состав и цена.
   // печатаем через диалог браузера — там пункт «Сохранить как PDF»
   function downloadOffer() {
@@ -1637,10 +1880,23 @@
     const rows = lastQuote.breakdown.lines
       .map(l => '<tr><td>' + esc(l.t) + '</td><td>' + money(l.v) + '</td></tr>').join('');
 
+    // листы с фото идут первыми. Не загружено — лист просто не печатаем,
+    // подсказка «загрузите фото» клиенту попасть не должна
+    const photoPage = slot => {
+      const data = getPhoto(slot);
+      if (!data) return '';
+      return '<div class="pic"><img src="' + data + '" style="' + cropCss(getCrop(slot)) + '"></div>';
+    };
+    const pages = photoPage('dom') + photoPage('plan');
+
     const html =
       '<!doctype html><html lang="ru"><head><meta charset="utf-8">' +
       '<title>КП ' + date + '</title><style>' +
       '@page { size: A4; margin: 0; }' +
+      '.pic { width: 210mm; height: 297mm; overflow: hidden; position: relative;' +
+      ' break-after: page; page-break-after: always; }' +
+      '.pic img { position: absolute; inset: 0; width: 100%; height: 100%;' +
+      ' object-fit: cover; transform-origin: center; }' +
       '* { box-sizing: border-box; margin: 0; padding: 0; }' +
       'body { font: 11.5pt/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;' +
       ' color: #1d2b24; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
@@ -1669,6 +1925,7 @@
       '.foot { margin: 12mm 16mm 0; padding-top: 6mm; border-top: 1px solid #e8ece9;' +
       ' font-size: 9.5pt; line-height: 1.65; color: #8a968f; }' +
       '</style></head><body>' +
+      pages +
       '<div class="bar"><div class="logo">ДД</div><div>' +
       '<h1>Дачный садовый домик</h1>' +
       '<div class="sub">Коммерческое предложение · ' + date + '</div>' +
@@ -1704,7 +1961,9 @@
     if (doc.readyState === 'complete') go();
     else frame.onload = go;
 
-    toast('Выберите «Сохранить как PDF» и укажите папку');
+    toast(pages
+      ? 'Выберите «Сохранить как PDF». Для фото включите «Фоновая графика»'
+      : 'Выберите «Сохранить как PDF» и укажите папку');
   }
 
   async function saveQuote() {
@@ -2347,6 +2606,7 @@
 
     renderOptions();
     restoreForm();      // возвращаем то, что было до перезагрузки
+    renderPhotos();
     refreshAll();
     switchTab('calc');
     show('app');
@@ -2438,6 +2698,7 @@
 
     $('calcBtn').addEventListener('click', () => calculate(false));
     $('resetBtn').addEventListener('click', resetForm);
+    bindPhotos();
 
     // «finish» живёт внутри блока опций — там уже есть общий обработчик
     ['frame', 'hasTerrace'].forEach(id =>
