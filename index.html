@@ -1927,6 +1927,16 @@
     });
   }
 
+  // контакты компании — правятся здесь, попадают в КП
+  const CO = {
+    phone: '+7 978 251-64-69',
+    tel:   '+79782516469',
+    addr:  'Москва, ул. Адмирала Корнилова 66, строение 20',
+    tg:    'https://t.me/+79782516469',
+    max:   'https://max.ru/+79782516469',
+    wa:    'https://wa.me/79782516469'
+  };
+
   // коммерческое предложение листом А4: состав и цена.
   // печатаем через диалог браузера — там пункт «Сохранить как PDF»
   function downloadOffer() {
@@ -2064,6 +2074,15 @@
       '.total span { font-size: 11pt; font-weight: 600; opacity: .85; }' +
       '.total b { font-size: 21pt; font-weight: 700; letter-spacing: -.6pt;' +
       ' font-variant-numeric: tabular-nums; }' +
+      '.contacts { margin-top: 9mm; padding-top: 6mm; border-top: 1px solid #e8ece9;' +
+      ' display: flex; justify-content: space-between; align-items: center; gap: 10mm; }' +
+      '.c-phone { display: block; font-size: 16pt; font-weight: 700; color: #1d2b24;' +
+      ' text-decoration: none; letter-spacing: -.3pt; }' +
+      '.c-addr { margin-top: 2pt; font-size: 10.5pt; color: #8a968f; }' +
+      '.c-btns { display: flex; gap: 5pt; flex: 0 0 auto; }' +
+      '.c-btns a { display: inline-block; padding: 6pt 12pt; border-radius: 99pt;' +
+      ' background: #2f5044; color: #fff; text-decoration: none;' +
+      ' font-size: 10.5pt; font-weight: 600; white-space: nowrap; }' +
       '</style></head><body>' +
       pages +
       '<div class="bar"><div class="logo">ДД</div><div>' +
@@ -2074,6 +2093,17 @@
       '<h2>Что входит</h2>' +
       rows +
       '<div class="total"><span>Итого</span><b>' + money(lastQuote.total) + '</b></div>' +
+      '<div class="contacts">' +
+        '<div class="c-info">' +
+          '<a class="c-phone" href="tel:' + CO.tel + '">' + CO.phone + '</a>' +
+          '<div class="c-addr">' + CO.addr + '</div>' +
+        '</div>' +
+        '<div class="c-btns">' +
+          '<a href="' + CO.tg + '">Telegram</a>' +
+          '<a href="' + CO.max + '">MAX</a>' +
+          '<a href="' + CO.wa + '">WhatsApp</a>' +
+        '</div>' +
+      '</div>' +
       '</div>' +
       '</body></html>';
 
