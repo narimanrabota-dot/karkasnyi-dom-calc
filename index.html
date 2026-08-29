@@ -1930,6 +1930,11 @@
   }
 
   // контакты компании — правятся здесь, попадают в КП
+  // что клиент получает за эту цену — печатается под итогом
+  const VALUE_LINE = 'Готовый домик за 21 день · гарантия 2 года · ' +
+    'фундамент, доставка и сборка уже в цене · собственная бригада · ' +
+    'выезд инженера на участок бесплатно';
+
   const CO = {
     phone: '+7 978 251-64-69',
     tel:   '+79782516469',
@@ -2112,6 +2117,7 @@
       '.total span { font-size: 11pt; font-weight: 600; opacity: .85; }' +
       '.total b { font-size: 21pt; font-weight: 700; letter-spacing: -.6pt;' +
       ' font-variant-numeric: tabular-nums; }' +
+      '.value { margin-top: 7pt; font-size: 11pt; line-height: 1.6; color: #4a5a52; }' +
       '.valid { margin-top: 5pt; text-align: right; font-size: 10.5pt; color: #8a968f; }' +
       '.contacts { margin-top: 9mm; padding-top: 6mm; border-top: 1px solid #e8ece9;' +
       ' display: flex; justify-content: space-between; align-items: center; gap: 10mm; }' +
@@ -2132,6 +2138,7 @@
       '<h2>Что входит</h2>' +
       rows +
       '<div class="total"><span>Итого</span><b>' + money(lastQuote.total) + '</b></div>' +
+      '<div class="value">' + VALUE_LINE + '</div>' +
       '<div class="valid">Цена действительна до ' + validTill + '</div>' +
       '<div class="contacts">' +
         '<div class="c-info">' +
